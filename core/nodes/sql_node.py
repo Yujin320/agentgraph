@@ -65,13 +65,13 @@ def sql_node(state: dict) -> dict:
         if filters:
             sql = _apply_filters(sql, filters)
     else:
-        # Fallback: use Vanna for ad-hoc generation
-        vn = _get_vanna_for_workspace(ws)
-        schema_hint = str(ws.get_schema_dict())
-        generated = vn.generate_sql(state.get("question", ""), schema_hint=schema_hint) if vn else None
-        if generated:
-            sql = generated
-        else:
-            sql = f"-- No SQL template found for node '{current_node_id}' and Vanna unavailable"
+        # Fallback: retrieve closest few-shot example from SQL RAG
+        from knowledge.vanna_store import get_sql_rag
+        rag = get_sql_rag(ws)
+        if rag:
+            matches = rag.retrieve(state.get("question", ""), n_results=1)
+            sql = matches[0]["sql"] if matches and matches[0].get("sql") else ""
+        if not sql:
+            sql = f"-- No SQL template found for node '{current_node_id}'"
 
     return {"sql": sql}

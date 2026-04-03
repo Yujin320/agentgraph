@@ -131,7 +131,7 @@ def build_schema_context(workspace: "Workspace") -> str:
     # Add current reporting period hint
     period = workspace.current_period
     if period:
-        parts.append(f"\n=== 当前报告期 ===\n  {period}（SQL中用 '{period}' 代替"本月"）")
+        parts.append(f"\n=== 当前报告期 ===\n  {period}（SQL中用 '{period}' 代替本月）")
 
     return "\n".join(parts)
 

@@ -1,17 +1,17 @@
-"""Vanna store — per-workspace SQL RAG using ChromaDB.
+"""SQL RAG store — per-workspace few-shot retrieval using ChromaDB.
 
-Each workspace gets its own isolated ChromaDB collection trained on:
-  - DDL statements from schema_dict.yaml
-  - Table/field descriptions as documentation
-  - Few-shot Q&A pairs from few_shots.json
+Replaces the old Vanna-based approach with a lightweight ChromaDB store
+that embeds question→SQL pairs and retrieves the most relevant examples
+for a given user question.
 
 Usage::
-    from knowledge.vanna_store import get_vanna
-    vn = get_vanna(workspace)       # returns WorkspaceVanna or None
-    sql = vn.generate_sql("这个月整体达成率是多少？") if vn else None
+    from knowledge.vanna_store import get_sql_rag, generate_sql_with_rag
+    rag = get_sql_rag(workspace)
+    examples = rag.retrieve("本月整体达成率") if rag else []
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 from pathlib import Path
@@ -22,186 +22,114 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Persist ChromaDB collections here, one sub-directory per workspace name.
 CHROMA_DIR = Path(__file__).resolve().parent.parent / "workspaces" / ".chroma"
 
-# Module-level cache: workspace_name → WorkspaceVanna instance
-_VANNA_CACHE: dict[str, "WorkspaceVanna"] = {}
-
-
-# ---------------------------------------------------------------------------
-# WorkspaceVanna — the real Vanna class (only defined when deps are present)
-# ---------------------------------------------------------------------------
+_CACHE: dict[str, "SqlRagStore"] = {}
 
 try:
-    from vanna.chromadb import ChromaDB_VectorStore  # type: ignore
-    from vanna.openai import OpenAI_Chat              # type: ignore
+    import chromadb
 
-    class WorkspaceVanna(ChromaDB_VectorStore, OpenAI_Chat):
-        """Vanna instance bound to a specific workspace's ChromaDB collection."""
+    class SqlRagStore:
+        """Lightweight ChromaDB store for SQL few-shot retrieval."""
 
-        def __init__(self, workspace_name: str, config: dict):
-            ChromaDB_VectorStore.__init__(self, config={
-                "path": str(CHROMA_DIR / workspace_name),
-                "collection_name": f"vanna_{workspace_name}",
-            })
-            OpenAI_Chat.__init__(self, config=config)
+        def __init__(self, workspace_name: str):
+            CHROMA_DIR.mkdir(parents=True, exist_ok=True)
+            self._client = chromadb.PersistentClient(path=str(CHROMA_DIR / workspace_name))
+            self._collection = self._client.get_or_create_collection(
+                name=f"sql_rag_{workspace_name}",
+                metadata={"hnsw:space": "cosine"},
+            )
 
-    _VANNA_AVAILABLE = True
+        @property
+        def count(self) -> int:
+            return self._collection.count()
+
+        def add_example(self, question: str, sql: str, metadata: dict | None = None):
+            doc_id = hashlib.md5(question.encode()).hexdigest()[:12]
+            meta = {"sql": sql}
+            if metadata:
+                meta.update({k: str(v) for k, v in metadata.items()})
+            self._collection.upsert(
+                ids=[doc_id],
+                documents=[question],
+                metadatas=[meta],
+            )
+
+        def add_documentation(self, text: str, doc_id: str | None = None):
+            if not doc_id:
+                doc_id = "doc_" + hashlib.md5(text.encode()).hexdigest()[:12]
+            self._collection.upsert(
+                ids=[doc_id],
+                documents=[text],
+                metadatas=[{"type": "documentation"}],
+            )
+
+        def retrieve(self, question: str, n_results: int = 5) -> list[dict]:
+            """Return top-N most relevant examples for a question."""
+            if self._collection.count() == 0:
+                return []
+            results = self._collection.query(
+                query_texts=[question],
+                n_results=min(n_results, self._collection.count()),
+            )
+            out = []
+            for i, doc in enumerate(results["documents"][0]):
+                meta = results["metadatas"][0][i] if results["metadatas"] else {}
+                out.append({"question": doc, "sql": meta.get("sql", ""), **meta})
+            return out
+
+    _AVAILABLE = True
 
 except ImportError:
-    logger.warning(
-        "vanna / chromadb packages not installed — "
-        "SQL RAG disabled. Install with: pip install vanna chromadb"
-    )
-    _VANNA_AVAILABLE = False
-    WorkspaceVanna = None  # type: ignore[assignment,misc]
+    logger.warning("chromadb not installed — SQL RAG disabled.")
+    _AVAILABLE = False
+    SqlRagStore = None  # type: ignore
 
 
-# ---------------------------------------------------------------------------
-# Training helpers
-# ---------------------------------------------------------------------------
-
-def _train_from_workspace(vn: "WorkspaceVanna", workspace: "Workspace") -> None:
-    """Train a fresh WorkspaceVanna instance from workspace knowledge files."""
+def _train_store(store: SqlRagStore, workspace: Workspace) -> None:
+    """Populate store from workspace knowledge files."""
     schema = workspace.get_schema_dict()
     few_shots = workspace.get_few_shots()
 
-    # --- DDL: one CREATE TABLE per table definition ---
-    tables: dict = schema.get("tables", {})
-    for tbl_name, tbl_meta in tables.items():
-        ddl_lines = [f"CREATE TABLE {tbl_name} ("]
-        fields: dict = tbl_meta.get("fields", {})
-        col_defs = []
-        for col_name, col_meta in fields.items():
-            col_type = _sql_type(col_meta.get("type", "string"))
-            comment = col_meta.get("alias", col_name)
-            col_defs.append(f"    {col_name} {col_type}  -- {comment}")
-        ddl_lines.append(",\n".join(col_defs))
-        ddl_lines.append(");")
-        ddl = "\n".join(ddl_lines)
-        vn.train(ddl=ddl)
-        logger.debug("Trained DDL for table: %s", tbl_name)
-
-    # --- Documentation: table-level descriptions ---
-    for tbl_name, tbl_meta in tables.items():
-        desc_parts = [
-            f"表名: {tbl_name}",
-            f"中文名: {tbl_meta.get('alias', '')}",
-            f"说明: {tbl_meta.get('description', '')}",
-            f"粒度: {tbl_meta.get('row_granularity', '')}",
-        ]
-        # Per-field descriptions
-        fields = tbl_meta.get("fields", {})
-        for col_name, col_meta in fields.items():
-            field_desc = (
-                f"  - {col_name} ({col_meta.get('alias', '')}): "
-                f"{col_meta.get('description', '')}"
-            )
-            desc_parts.append(field_desc)
-        vn.train(documentation="\n".join(desc_parts))
-
-    # --- Business rules as documentation ---
-    rules: dict = schema.get("business_rules", {})
+    # Add DDL documentation
+    from knowledge.schema_builder import build_ddl, build_rules_context
+    store.add_documentation(build_ddl(workspace), doc_id="ddl")
+    rules = build_rules_context(workspace)
     if rules:
-        rules_lines = ["业务规则:"]
-        for rule_name, rule_body in rules.items():
-            rule_text = rule_body.get("rule", "") if isinstance(rule_body, dict) else str(rule_body)
-            rule_desc = rule_body.get("description", "") if isinstance(rule_body, dict) else ""
-            rules_lines.append(f"  [{rule_name}] {rule_text} — {rule_desc}")
-        vn.train(documentation="\n".join(rules_lines))
+        store.add_documentation(rules, doc_id="rules")
 
-    # --- Query term mappings as documentation ---
-    term_map: dict = schema.get("query_term_mapping", {})
-    if term_map:
-        term_lines = ["常用中文查询词映射:"]
-        for term, mapping in term_map.items():
-            term_lines.append(f'  "{term}" → {mapping}')
-        vn.train(documentation="\n".join(term_lines))
+    # Add few-shot Q&A pairs
+    count = 0
+    for ex in few_shots.get("examples", []):
+        q, sql = ex.get("question", ""), ex.get("sql", "")
+        if q and sql:
+            store.add_example(q, sql, {"scenario": ex.get("scenario", "")})
+            count += 1
 
-    # --- Few-shot Q&A pairs ---
-    examples: list = few_shots.get("examples", [])
-    for ex in examples:
-        question: str = ex.get("question", "")
-        sql: str = ex.get("sql", "")
-        if question and sql:
-            vn.add_question_sql(question=question, sql=sql)
-            logger.debug("Added few-shot: %s", question[:60])
-
-    logger.info(
-        "Vanna training complete for workspace '%s': "
-        "%d tables, %d few-shots.",
-        workspace.name,
-        len(tables),
-        len(examples),
-    )
+    logger.info("SQL RAG trained for workspace: %d examples indexed.", count)
 
 
-def _sql_type(field_type: str) -> str:
-    """Map schema field types to SQL column types."""
-    mapping = {
-        "string": "TEXT",
-        "integer": "INTEGER",
-        "float": "REAL",
-        "date": "DATE",
-        "datetime": "DATETIME",
-    }
-    return mapping.get(field_type.lower(), "TEXT")
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
-
-def get_vanna(workspace: "Workspace") -> Optional["WorkspaceVanna"]:
-    """Return a trained WorkspaceVanna for *workspace*, cached after first call.
-
-    On the first call for a given workspace name a new ChromaDB collection is
-    created and trained from the workspace knowledge files.  Subsequent calls
-    return the cached instance immediately.
-
-    Returns None if the vanna/chromadb packages are not installed.
-    """
-    if not _VANNA_AVAILABLE:
+def get_sql_rag(workspace: Workspace) -> Optional[SqlRagStore]:
+    """Return a trained SqlRagStore, cached per workspace name."""
+    if not _AVAILABLE:
         return None
 
     name = workspace.name
-    if name in _VANNA_CACHE:
-        return _VANNA_CACHE[name]
-
-    # Build LLM config from env + optional workspace override
-    llm_override = workspace.llm_config
-    config: dict = {
-        "api_key": llm_override.get("api_key") or os.getenv("LLM_API_KEY", ""),
-        "model": llm_override.get("model") or os.getenv("LLM_MODEL", "gpt-4o"),
-    }
-    base_url = llm_override.get("base_url") or os.getenv("LLM_BASE_URL", "")
-    if base_url:
-        config["base_url"] = base_url
-
-    # Ensure ChromaDB persistence directory exists
-    CHROMA_DIR.mkdir(parents=True, exist_ok=True)
-    chroma_path = CHROMA_DIR / name
+    if name in _CACHE:
+        return _CACHE[name]
 
     try:
-        vn = WorkspaceVanna(workspace_name=name, config=config)
-
-        # Train only on first creation (empty collection)
-        if not chroma_path.exists() or not any(chroma_path.iterdir()):
-            logger.info(
-                "No existing Vanna collection for '%s' — training now.", name
-            )
-            _train_from_workspace(vn, workspace)
-        else:
-            logger.info(
-                "Loaded existing Vanna collection for workspace '%s'.", name
-            )
-
-        _VANNA_CACHE[name] = vn
-        return vn
-
+        store = SqlRagStore(name)
+        if store.count == 0:
+            logger.info("Training SQL RAG for workspace '%s'...", name)
+            _train_store(store, workspace)
+        _CACHE[name] = store
+        return store
     except Exception as exc:
-        logger.warning(
-            "Failed to initialise Vanna for workspace '%s': %s", name, exc
-        )
+        logger.warning("Failed to init SQL RAG for '%s': %s", name, exc)
         return None
+
+
+# Backward-compatible alias used by sql_node.py
+def get_vanna(workspace: Workspace):
+    return get_sql_rag(workspace)
