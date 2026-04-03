@@ -1,0 +1,119 @@
+{
+  "description": "Engine-compatible attribution graph for 川渝大区供应链. Each node has metric_sql + threshold for Plan-Execute-Reflect reasoning.",
+  "scenarios": [
+    {
+      "id": "waididao_attribution",
+      "title": "外调品归因",
+      "description": "外调品占比异常 → 库存告急 → 产量不足",
+      "entry_node": "ext_transfer_ratio",
+      "nodes": [
+        {
+          "id": "ext_transfer_ratio",
+          "label": "外调品占比",
+          "layer": "销售层",
+          "metric_sql": "SELECT ROUND(100.0*SUM(CASE WHEN is_external_transfer=1 THEN deliv_qty_mt ELSE 0 END)/NULLIF(SUM(deliv_qty_mt),0),1) AS value FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='{current_period}' AND deliv_retrngds_identfctn IS NULL",
+          "threshold": 40,
+          "threshold_op": ">",
+          "threshold_desc": "外调占比超过 40% 视为异常",
+          "children": [
+            "inventory_shortage"
+          ]
+        },
+        {
+          "id": "inventory_shortage",
+          "label": "库存告急数量",
+          "layer": "库存层",
+          "metric_sql": "SELECT COUNT(*) AS value FROM sales_order WHERE order_dlvry_sts_code IN ('01','02') AND strftime('%Y%m', order_crt_date)='{current_period}'",
+          "threshold": 30,
+          "threshold_op": ">",
+          "threshold_desc": "未完成订单超过 30 条视为库存告急",
+          "children": [
+            "production_rate"
+          ]
+        },
+        {
+          "id": "production_rate",
+          "label": "计划达成率",
+          "layer": "生产层",
+          "metric_sql": "SELECT ROUND(100.0*SUM(actual_qty)/NULLIF(SUM(plan_qty),0),1) AS value FROM rolling_plan WHERE stats_yearmth='{current_period}'",
+          "threshold": 85,
+          "threshold_op": "<",
+          "threshold_desc": "计划达成率低于 85% 视为产量不足",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "sales_achievement",
+      "title": "销量达成归因",
+      "description": "整体达成率低 → 订单倒挂 → 渠道结构问题",
+      "entry_node": "overall_achievement",
+      "nodes": [
+        {
+          "id": "overall_achievement",
+          "label": "整体达成率",
+          "layer": "销售层",
+          "metric_sql": "SELECT ROUND(100.0*SUM(d.deliv_qty_mt)/NULLIF(SUM(p.plan_qty),0),1) AS value FROM sales_delivery d JOIN rolling_plan p ON strftime('%Y%m', d.deliv_crt_time)=p.stats_yearmth AND d.brnch_code=p.brnch_code AND d.busline_code=p.busline_code WHERE p.stats_yearmth='{current_period}' AND d.deliv_retrngds_identfctn IS NULL",
+          "threshold": 90,
+          "threshold_op": "<",
+          "threshold_desc": "整体达成率低于 90% 视为异常",
+          "children": [
+            "order_backlog"
+          ]
+        },
+        {
+          "id": "order_backlog",
+          "label": "订单倒挂率",
+          "layer": "订单层",
+          "metric_sql": "SELECT ROUND(100.0*SUM(CASE WHEN order_dlvry_sts_code IN ('01','02') THEN 1 ELSE 0 END)/NULLIF(COUNT(*),0),1) AS value FROM sales_order WHERE strftime('%Y%m', order_crt_date)='{current_period}'",
+          "threshold": 20,
+          "threshold_op": ">",
+          "threshold_desc": "未完成订单占比超过 20% 视为倒挂严重",
+          "children": [
+            "channel_concentration"
+          ]
+        },
+        {
+          "id": "channel_concentration",
+          "label": "渠道集中度",
+          "layer": "渠道层",
+          "metric_sql": "SELECT ROUND(100.0*SUM(CASE WHEN chnl_descrptn='流通' THEN deliv_qty_mt ELSE 0 END)/NULLIF(SUM(deliv_qty_mt),0),1) AS value FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='{current_period}' AND deliv_retrngds_identfctn IS NULL",
+          "threshold": 70,
+          "threshold_op": ">",
+          "threshold_desc": "流通渠道占比超过 70% 视为渠道过于集中",
+          "children": []
+        }
+      ]
+    },
+    {
+      "id": "monthend_squeeze",
+      "title": "月末挤水归因",
+      "description": "月末订单异常集中 → 实际发货滞后",
+      "entry_node": "monthend_order_pct",
+      "nodes": [
+        {
+          "id": "monthend_order_pct",
+          "label": "月末3天订单占比",
+          "layer": "销售层",
+          "metric_sql": "SELECT ROUND(100.0*SUM(CASE WHEN CAST(strftime('%d', order_crt_date) AS INTEGER) >= 28 THEN order_qty_mt ELSE 0 END)/NULLIF(SUM(order_qty_mt),0),1) AS value FROM sales_order WHERE strftime('%Y%m', order_crt_date)='{current_period}'",
+          "threshold": 35,
+          "threshold_op": ">",
+          "threshold_desc": "月末3天订单量占月度超过 35% 视为挤水",
+          "children": [
+            "delivery_lag"
+          ]
+        },
+        {
+          "id": "delivery_lag",
+          "label": "未发货订单占比",
+          "layer": "物流层",
+          "metric_sql": "SELECT ROUND(100.0*SUM(CASE WHEN order_dlvry_sts_code='01' THEN 1 ELSE 0 END)/NULLIF(COUNT(*),0),1) AS value FROM sales_order WHERE strftime('%Y%m', order_crt_date)='{current_period}'",
+          "threshold": 15,
+          "threshold_op": ">",
+          "threshold_desc": "未发货订单超过 15% 视为交付滞后",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

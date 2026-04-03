@@ -1,0 +1,74 @@
+{
+  "scenario_id": "渠道结构分析",
+  "title": "渠道结构分析",
+  "icon": "📊",
+  "description": "分析各销售渠道的提货量分布与结构变化趋势",
+  "kpis": [
+    {
+      "label": "渠道数",
+      "sql": "SELECT COUNT(DISTINCT deliv_distri_chnl_descrptn) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.0f}",
+      "help": "本月有提货记录的渠道数量"
+    },
+    {
+      "label": "流通渠道占比",
+      "sql": "SELECT ROUND(SUM(CASE WHEN deliv_distri_chnl_descrptn LIKE '%流通%' THEN deliv_qty_mt ELSE 0 END)*100.0/NULLIF(SUM(deliv_qty_mt),0),1) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "流通渠道提货量占总量比例"
+    },
+    {
+      "label": "最大渠道",
+      "sql": "SELECT deliv_distri_chnl_descrptn as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_distri_chnl_descrptn ORDER BY SUM(deliv_qty_mt) DESC LIMIT 1",
+      "value_col": "v",
+      "format": "{}",
+      "help": "本月提货量最大的渠道"
+    },
+    {
+      "label": "TOP3渠道集中度",
+      "sql": "SELECT ROUND(SUM(qty)*100.0/NULLIF((SELECT SUM(deliv_qty_mt) FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL),0),1) as v FROM (SELECT SUM(deliv_qty_mt) as qty FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_distri_chnl_descrptn ORDER BY qty DESC LIMIT 3)",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "提货量前3渠道占总量的比例"
+    }
+  ],
+  "stages": [
+    {
+      "id": "channel_share",
+      "title": "渠道占比",
+      "icon": "🥧",
+      "description": "各渠道的提货量与占比分布",
+      "sql": "SELECT deliv_distri_chnl_descrptn as 渠道, ROUND(SUM(deliv_qty_mt),1) as 提货量_吨, ROUND(100.0*SUM(deliv_qty_mt)/NULLIF((SELECT SUM(deliv_qty_mt) FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL),0),1) as 占比_pct FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_distri_chnl_descrptn ORDER BY 提货量_吨 DESC",
+      "chart_type": "pie",
+      "chart_x": "渠道",
+      "chart_y": "提货量_吨",
+      "insight_focus": "哪个渠道占比最高？渠道结构是否过于集中？"
+    },
+    {
+      "id": "channel_product_cross",
+      "title": "渠道×产线交叉",
+      "icon": "🔀",
+      "description": "各渠道在不同产线上的提货量分布",
+      "sql": "SELECT deliv_distri_chnl_descrptn as 渠道, deliv_prodctnline_descrptn as 产线, ROUND(SUM(deliv_qty_mt),1) as 提货量_吨 FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_distri_chnl_descrptn, deliv_prodctnline_descrptn ORDER BY 渠道, 提货量_吨 DESC",
+      "chart_type": "bar",
+      "chart_x": "产线",
+      "chart_y": ["提货量_吨"],
+      "insight_focus": "不同渠道的产品偏好是什么？哪些产线高度依赖单一渠道？"
+    },
+    {
+      "id": "channel_trend",
+      "title": "渠道趋势",
+      "icon": "📈",
+      "description": "近3个月各渠道提货量变化趋势",
+      "sql": "SELECT strftime('%Y%m', deliv_crt_time) as 月份, deliv_distri_chnl_descrptn as 渠道, ROUND(SUM(deliv_qty_mt),1) as 提货量_吨 FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) IN ('202601','202602','202603') AND deliv_retrngds_identfctn IS NULL GROUP BY 月份, 渠道 ORDER BY 月份, 提货量_吨 DESC",
+      "chart_type": "line",
+      "chart_x": "月份",
+      "chart_y": ["提货量_吨"],
+      "insight_focus": "各渠道提货量是上升还是下降？是否有渠道出现异常波动？"
+    }
+  ],
+  "summary_prompt": "根据以上渠道结构分析数据（渠道占比、渠道×产线交叉、渠道趋势），请以营销管理视角总结：1)渠道结构特点，2)结构性风险，3)建议的渠道优化方向。不超过150字。",
+  "nav_from_graph": true,
+  "causal_graph_node": "渠道结构分析"
+}

@@ -1,0 +1,350 @@
+# Arawana智能问数系统 — 语义字典
+# 版本: 3.0
+# 说明: 字段中文映射、值域说明、表关联关系及业务规则
+# 扩展方式: 见文件末尾 _extensibility 章节
+
+# ─────────────────────────────────────────
+# 表定义
+# ─────────────────────────────────────────
+tables:
+
+  sales_delivery:
+    alias: "提单明细表"
+    description: "记录每一笔提货（出库）的明细，是实际销量的基础数据"
+    primary_key: "delivnum"
+    row_granularity: "每行 = 一条提单（一次客户提货记录）"
+    fields:
+      delivnum:
+        alias: "提单号"
+        type: string
+        description: "提单唯一编号，可用于JOIN或去重"
+      deliv_crt_time:
+        alias: "提单创建时间"
+        type: datetime
+        description: "提单生成的时间戳，格式 YYYY-MM-DD HH:MM:SS。⚠️ sales_delivery 没有 stats_yearmth 列！按月份过滤必须用 strftime('%Y%m', deliv_crt_time) = '202603'"
+        sqlite_date_fn: "strftime('%Y%m', deliv_crt_time) => 年月字符串，如 '202603'"
+        important: "此表无 stats_yearmth 列，月份筛选只能用 strftime('%Y%m', deliv_crt_time)"
+      brnch_code:
+        alias: "分公司编码"
+        type: string
+        description: "所属分公司的编码，与 rolling_plan 关联的 JOIN 键"
+      brnch_descrptn:
+        alias: "分公司名称"
+        type: string
+        description: "分公司中文名称，用于分组展示"
+        example: "成都分公司、重庆分公司"
+      busline_code:
+        alias: "业务线编码"
+        type: string
+        description: "业务线编码，与 rolling_plan 关联的 JOIN 键"
+        example: "'FOOD_OIL'"
+      deliv_soldto_code:
+        alias: "售达方编码"
+        type: string
+        description: "客户（售达方）的系统编码"
+      deliv_soldto_name:
+        alias: "售达方名称"
+        type: string
+        description: "客户中文名称，用于客户维度分析"
+      deliv_mat_code:
+        alias: "物料编码"
+        type: string
+        description: "产品的物料主数据编码"
+      deliv_mat_name:
+        alias: "物料名称"
+        type: string
+        description: "产品中文名称，如 'Arawana大豆油5L'"
+      deliv_prodctnline_descrptn:
+        alias: "产线名称"
+        type: string
+        description: "产品所属产线，如 大豆油、菜籽油、调和油、包装米等"
+      deliv_sply_plant_code:
+        alias: "供货工厂编码"
+        type: string
+        description: "实际供货工厂的系统编码"
+      deliv_sply_plant_descrptn:
+        alias: "供货工厂名称"
+        type: string
+        description: "供货工厂中文名称，用于外调品来源分析"
+      deliv_qty_mt:
+        alias: "提货量（吨）"
+        type: float
+        description: "本次提货的重量，单位：吨（MT）"
+      deliv_distri_chnl_descrptn:
+        alias: "经销渠道"
+        type: string
+        description: "销售渠道描述"
+        example: "商超、电商、流通、餐饮"
+      deliv_retrngds_identfctn:
+        alias: "退货标识"
+        type: string
+        description: "非空表示该提单为退货，正常业务分析需过滤掉"
+        filter_rule: "WHERE deliv_retrngds_identfctn IS NULL"
+      is_external_transfer:
+        alias: "外调品标识"
+        type: integer
+        description: "1=外调品（供货工厂不在川渝本地），0=本地供货"
+        values: {1: "外调品", 0: "本地供货"}
+      logistics_cost_per_mt:
+        alias: "每吨物流成本（元）"
+        type: float
+        description: "该提单对应的每吨物流运费，用于外调品成本对比"
+      rgn_code:
+        alias: "大区编码"
+        type: string
+        description: "所属大区编码。⚠️ POC 数据只有一个大区 'YH0021'（西南区），无需按此字段筛选"
+        example: "'YH0021'"
+      rgn_descrptn:
+        alias: "大区名称"
+        type: string
+        description: "大区中文名称"
+        example: "'西南区'"
+
+  sales_order:
+    alias: "订单明细表"
+    description: "记录客户下单的销售订单，与提单对应形成订单-发货关系"
+    primary_key: "ordernum"
+    row_granularity: "每行 = 一条订单行项目"
+    fields:
+      ordernum:
+        alias: "订单号"
+        type: string
+        description: "销售订单唯一编号"
+      order_crt_date:
+        alias: "订单创建日期"
+        type: date
+        description: "订单生成日期，格式 YYYY-MM-DD。⚠️ sales_order 没有 stats_yearmth 列！按月份过滤必须用 strftime('%Y%m', order_crt_date) = '202603'"
+        sqlite_date_fn: "strftime('%Y%m', order_crt_date) => 年月"
+        important: "此表无 stats_yearmth 列，月份筛选只能用 strftime('%Y%m', order_crt_date)"
+      brnch_code:
+        alias: "分公司编码"
+        type: string
+      brnch_descrptn:
+        alias: "分公司名称"
+        type: string
+      order_soldto_name:
+        alias: "售达方名称"
+        type: string
+        description: "下单客户名称"
+      order_mat_name:
+        alias: "物料名称"
+        type: string
+      order_prodctnline_descrptn:
+        alias: "产线名称"
+        type: string
+      order_qty_mt:
+        alias: "订单量（吨）"
+        type: float
+        description: "订单中约定的货品重量，单位：吨"
+      order_dlvry_sts_code:
+        alias: "交货状态编码"
+        type: string
+        description: "订单的交货完成状态"
+        values:
+          "A": "未开始交货"
+          "B": "部分交货"
+          "C": "完全交货（已完成）"
+        filter_rule: "倒挂分析: WHERE order_dlvry_sts_code != 'C'"
+      order_pymnt_sts:
+        alias: "打款状态"
+        type: string
+        description: "客户付款状态，月末挤水分析的关键字段"
+        values:
+          "PAID": "已打款"
+          "UNPAID": "未打款"
+          "PARTIAL": "部分打款"
+      busline_code:
+        alias: "业务线编码"
+        type: string
+      rgn_code:
+        alias: "大区编码"
+        type: string
+        description: "所属大区编码。⚠️ POC 数据只有 'YH0021'（西南区），无需按此筛选"
+      rgn_descrptn:
+        alias: "大区名称"
+        type: string
+
+  rolling_plan:
+    alias: "滚动计划表"
+    description: "月度滚动销售计划，用于与实际提货量对比计算达成率"
+    primary_key: "plan_id"
+    row_granularity: "每行 = 一个分公司+业务线+年月的计划量"
+    join_keys: "brnch_code + busline_code + stats_yearmth（与 sales_delivery 关联）"
+    fields:
+      plan_id:
+        alias: "计划记录ID"
+        type: integer
+      stats_yearmth:
+        alias: "计划年月"
+        type: string
+        description: "计划所属年月，格式 YYYYMM，JOIN键"
+      brnch_code:
+        alias: "分公司编码"
+        type: string
+        description: "JOIN键"
+      brnch_descrptn:
+        alias: "分公司名称"
+        type: string
+      busline_code:
+        alias: "业务线编码"
+        type: string
+        description: "JOIN键"
+      busline_descrptn:
+        alias: "业务线名称"
+        type: string
+      rllng_planqty_mt:
+        alias: "滚动计划量（吨）"
+        type: float
+        description: "当月滚动调整后的销量计划，单位：吨"
+      original_planqty_mt:
+        alias: "原始计划量（吨）"
+        type: float
+        description: "月初制定的原始计划量，未经滚动调整"
+      rgn_code:
+        alias: "大区编码"
+        type: string
+        description: "⚠️ POC 数据只有 'YH0021'（西南区），无需按此筛选"
+      rgn_descrptn:
+        alias: "大区名称"
+        type: string
+
+# ─────────────────────────────────────────
+# 表关联关系
+# ─────────────────────────────────────────
+table_relationships:
+  - name: "提单与滚动计划"
+    left: "sales_delivery"
+    right: "rolling_plan"
+    join_type: "LEFT JOIN"
+    on: "sales_delivery.brnch_code = rolling_plan.brnch_code AND sales_delivery.busline_code = rolling_plan.busline_code AND strftime('%Y%m', sales_delivery.deliv_crt_time) = rolling_plan.stats_yearmth"
+    note: "sales_delivery 没有 stats_yearmth 列，必须用 strftime('%Y%m', deliv_crt_time) 做 JOIN"
+    use_case: "计算销量达成率"
+
+  - name: "订单与提单"
+    left: "sales_order"
+    right: "sales_delivery"
+    join_type: "LEFT JOIN"
+    on: "sales_order.ordernum = sales_delivery.ref_ordernum"
+    use_case: "分析订单到提货的转化（倒挂分析）"
+    note: "ref_ordernum为提单中记录的来源订单号字段（如存在）"
+
+# ─────────────────────────────────────────
+# 业务规则
+# ─────────────────────────────────────────
+business_rules:
+
+  外调品判断:
+    rule: "is_external_transfer = 1"
+    description: "供货工厂不在川渝本地（非GH01/CQ01/CD01）的提单即为外调品"
+    table: "sales_delivery"
+    example_sql: "WHERE is_external_transfer = 1"
+
+  达成率计算:
+    rule: "SUM(实际提货量) / SUM(滚动计划量) × 100%"
+    description: "当月累计提货量除以当月滚动计划量，百分比表示"
+    table: "sales_delivery JOIN rolling_plan"
+    example_sql: |
+      SELECT
+        ROUND(SUM(d.deliv_qty_mt) * 100.0 / SUM(p.rllng_planqty_mt), 2) AS achievement_rate
+      FROM sales_delivery d
+      LEFT JOIN rolling_plan p
+        ON d.brnch_code = p.brnch_code
+        AND d.busline_code = p.busline_code
+        AND strftime('%Y%m', d.deliv_crt_time) = p.stats_yearmth
+      WHERE strftime('%Y%m', d.deliv_crt_time) = '202603'
+        AND d.deliv_retrngds_identfctn IS NULL
+
+  倒挂率计算:
+    rule: "未完成交货订单量 / 总有效订单量 × 100%"
+    description: "order_dlvry_sts_code != 'C' 的订单视为倒挂（未完成交货）"
+    table: "sales_order"
+    example_sql: |
+      SELECT
+        ROUND(SUM(CASE WHEN order_dlvry_sts_code != 'C' THEN order_qty_mt ELSE 0 END) * 100.0 / SUM(order_qty_mt), 2) AS hangover_rate
+      FROM sales_order
+      WHERE strftime('%Y%m', order_crt_date) = '202603'
+
+  月末挤水判断:
+    rule: "月末最后3-5天（26日及之后）创建的订单中未打款比例"
+    description: "识别月末冲量但未真实成交的虚假订单"
+    table: "sales_order"
+    example_sql: |
+      SELECT
+        order_pymnt_sts,
+        COUNT(*) AS order_count,
+        SUM(order_qty_mt) AS total_qty
+      FROM sales_order
+      WHERE strftime('%Y%m', order_crt_date) = '202603'
+        AND strftime('%d', order_crt_date) >= '26'
+      GROUP BY order_pymnt_sts
+
+  退货排除:
+    rule: "deliv_retrngds_identfctn IS NULL"
+    description: "提单分析时必须排除退货记录，否则会低估实际销量"
+    table: "sales_delivery"
+    example_sql: "WHERE deliv_retrngds_identfctn IS NULL"
+
+  POC数据范围:
+    rule: "所有数据均属于同一大区（西南区 rgn_code='YH0021'），无需按大区过滤"
+    description: "POC 仿真数据只包含川渝大区数据，无需按大区过滤。字段名是 rgn_code 而非 region_code"
+
+  字段命名规范:
+    rule: "数据库字段使用缩写命名，常见映射：rgn=大区 brnch=分公司 descrptn=描述 deliv=提单 prodctnline=产线 identfctn=标识 retrngds=退货"
+    description: "生成SQL时必须使用数据库中实际存在的字段名（见上方字段列表），不可自行编造字段名"
+
+  SQLite日期处理:
+    strftime_yearmth: "strftime('%Y%m', date_column) — 提取年月字符串，如 '202603'"
+    strftime_year: "strftime('%Y', date_column) — 提取年份"
+    strftime_month: "strftime('%m', date_column) — 提取月份"
+    strftime_day: "strftime('%d', date_column) — 提取日期（两位）"
+    current_month: "'202603'  # POC阶段固定为当前月"
+    note: "SQLite不支持DATE_FORMAT，统一使用strftime"
+
+  外调品物流成本对比:
+    rule: "按 is_external_transfer 分组，对比 AVG(logistics_cost_per_mt)"
+    description: "外调品每吨物流成本通常高于本地供货，差值即为优化空间"
+    table: "sales_delivery"
+
+# ─────────────────────────────────────────
+# 常用中文查询词映射
+# ─────────────────────────────────────────
+query_term_mapping:
+  "这个月": "strftime('%Y%m', deliv_crt_time) = '202603'（sales_delivery）或 strftime('%Y%m', order_crt_date) = '202603'（sales_order）或 stats_yearmth = '202603'（rolling_plan）"
+  "3月": "同上，'202603'"
+  "上个月": "同上，'202602'"
+  "外调品": "is_external_transfer = 1"
+  "本地货": "is_external_transfer = 0"
+  "提货量": "deliv_qty_mt"
+  "销量": "deliv_qty_mt"
+  "计划量": "rllng_planqty_mt"
+  "达成率": "SUM(deliv_qty_mt)/SUM(rllng_planqty_mt)"
+  "完成率": "SUM(deliv_qty_mt)/SUM(rllng_planqty_mt)"
+  "运费": "logistics_cost_per_mt"
+  "物流成本": "logistics_cost_per_mt"
+  "倒挂": "order_dlvry_sts_code != 'C'"
+  "积压": "order_dlvry_sts_code != 'C'"
+  "未交货": "order_dlvry_sts_code != 'C'"
+  "打款": "order_pymnt_sts"
+  "分公司": "brnch_descrptn"
+  "产线": "deliv_prodctnline_descrptn"
+  "渠道": "deliv_distri_chnl_descrptn"
+  "工厂": "deliv_sply_plant_descrptn"
+  "客户": "deliv_soldto_name 或 order_soldto_name"
+
+# ─────────────────────────────────────────
+# 扩展说明
+# ─────────────────────────────────────────
+_extensibility:
+  add_new_table: |
+    在 tables: 下添加新的顶级key，格式与现有表相同。
+    必填: alias, description, primary_key, row_granularity, fields
+    可选: join_keys（如果该表需要与其他表关联）
+  add_new_field: |
+    在对应表的 fields: 下添加新key，格式:
+      field_name:
+        alias: "中文别名"
+        type: string|integer|float|date|datetime
+        description: "字段说明"
+        example: "示例值（可选）"
+  add_new_rule: |
+    在 business_rules: 下添加新的规则key，必填: rule, description, table

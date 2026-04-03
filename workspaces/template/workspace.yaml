@@ -1,0 +1,22 @@
+# Workspace configuration template
+# Copy this directory and fill in your domain-specific values.
+
+title: "My Business Domain"
+description: "Short description of what this workspace covers"
+
+# Reporting period used in SQL generation (YYYYMM format).
+# The engine replaces keywords like "this month" / "本月" with this value.
+current_period: "202603"
+
+# Database connection. Supports any SQLAlchemy DSN.
+# For SQLite, use a path relative to this workspace directory.
+database:
+  url: "sqlite:///data.db"
+  # url: "postgresql://user:pass@host:5432/dbname"
+  # url: "mysql+pymysql://user:pass@host:3306/dbname"
+
+# Optional: override global LLM settings for this workspace
+# llm:
+#   base_url: "https://api.openai.com/v1"
+#   api_key: "sk-..."
+#   model: "gpt-4o"

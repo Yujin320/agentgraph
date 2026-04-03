@@ -1,0 +1,39 @@
+# Schema dictionary — field semantics, business rules, and query term mapping.
+
+# List of tables in this workspace
+tables:
+  - name: your_table
+    chinese_name: "业务表中文名"
+    description: "What this table contains"
+    fields:
+      - name: id_col
+        chinese_name: "标识符"
+        category: identifier   # identifier | dimension | measure | metadata | status
+        description: "Primary key"
+      - name: metric_col
+        chinese_name: "核心指标"
+        category: measure
+        description: "The main metric value"
+        unit: "unit"
+      - name: dim_col
+        chinese_name: "维度字段"
+        category: dimension
+        description: "Dimension for grouping"
+
+# Table relationships for JOIN queries
+table_relationships:
+  - tables: [your_table, another_table]
+    join_condition: "your_table.key = another_table.key"
+    description: "How these two tables relate"
+
+# Business rules — always applied in SQL generation
+business_rules:
+  exclude_returns: "your_table.is_return IS NULL"
+  active_records_only: "your_table.status = 'active'"
+
+# Query term mapping — natural language → SQL fragments
+query_term_mapping:
+  "this month": "period = '{current_period}'"
+  "last month": "period = '{last_period}'"
+  # Add domain-specific mappings here
+  # "example term": "sql_fragment"

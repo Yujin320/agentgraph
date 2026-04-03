@@ -1,0 +1,74 @@
+{
+  "scenario_id": "下沉市场分析",
+  "title": "下沉市场分析",
+  "icon": "🏘️",
+  "description": "分析县级及以下市场的客户覆盖与提货表现，发掘下沉市场增长机会",
+  "kpis": [
+    {
+      "label": "县级客户数",
+      "sql": "SELECT COUNT(DISTINCT customer_code) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND (customer_descrptn LIKE '%县%' OR customer_descrptn LIKE '%镇%' OR customer_descrptn LIKE '%乡%' OR customer_descrptn LIKE '%村%')",
+      "value_col": "v",
+      "format": "{:.0f}",
+      "help": "本月有提货的县级及以下客户数（客户名含县/镇/乡/村）"
+    },
+    {
+      "label": "县级提货量",
+      "sql": "SELECT ROUND(SUM(deliv_qty_mt),1) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND (customer_descrptn LIKE '%县%' OR customer_descrptn LIKE '%镇%' OR customer_descrptn LIKE '%乡%' OR customer_descrptn LIKE '%村%')",
+      "value_col": "v",
+      "format": "{:.1f} t",
+      "help": "县级客户本月总提货量"
+    },
+    {
+      "label": "县级占比",
+      "sql": "SELECT ROUND(SUM(CASE WHEN customer_descrptn LIKE '%县%' OR customer_descrptn LIKE '%镇%' OR customer_descrptn LIKE '%乡%' OR customer_descrptn LIKE '%村%' THEN deliv_qty_mt ELSE 0 END)*100.0/NULLIF(SUM(deliv_qty_mt),0),1) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "县级客户提货量占总提货量的比例"
+    },
+    {
+      "label": "县级增速(vs上月)",
+      "sql": "SELECT ROUND((SUM(CASE WHEN strftime('%Y%m', deliv_crt_time)='202603' THEN deliv_qty_mt ELSE 0 END) - SUM(CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' THEN deliv_qty_mt ELSE 0 END))*100.0/NULLIF(SUM(CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' THEN deliv_qty_mt ELSE 0 END),0),1) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) IN ('202602','202603') AND deliv_retrngds_identfctn IS NULL AND (customer_descrptn LIKE '%县%' OR customer_descrptn LIKE '%镇%' OR customer_descrptn LIKE '%乡%' OR customer_descrptn LIKE '%村%')",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "县级客户本月提货量相比上月的增长率"
+    }
+  ],
+  "stages": [
+    {
+      "id": "region_distribution",
+      "title": "区域分布",
+      "icon": "🗺️",
+      "description": "各分公司的县级客户数与提货量",
+      "sql": "SELECT brnch_descrptn as 分公司, COUNT(DISTINCT customer_code) as 县级客户数, ROUND(SUM(deliv_qty_mt),1) as 县级提货量_吨, ROUND(SUM(deliv_qty_mt)/NULLIF(COUNT(DISTINCT customer_code),0),2) as 单客户均量_吨 FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND (customer_descrptn LIKE '%县%' OR customer_descrptn LIKE '%镇%' OR customer_descrptn LIKE '%乡%' OR customer_descrptn LIKE '%村%') GROUP BY brnch_descrptn ORDER BY 县级提货量_吨 DESC",
+      "chart_type": "bar",
+      "chart_x": "分公司",
+      "chart_y": ["县级提货量_吨", "县级客户数"],
+      "insight_focus": "哪些分公司下沉市场覆盖好？哪些分公司还有空白？"
+    },
+    {
+      "id": "product_preference",
+      "title": "产品偏好",
+      "icon": "🔩",
+      "description": "县级客户的产品线偏好分析",
+      "sql": "SELECT deliv_prodctnline_descrptn as 产线, ROUND(SUM(deliv_qty_mt),1) as 提货量_吨, COUNT(DISTINCT customer_code) as 客户数, ROUND(100.0*SUM(deliv_qty_mt)/NULLIF((SELECT SUM(deliv_qty_mt) FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND (customer_descrptn LIKE '%县%' OR customer_descrptn LIKE '%镇%' OR customer_descrptn LIKE '%乡%' OR customer_descrptn LIKE '%村%')),0),1) as 占比_pct FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND (customer_descrptn LIKE '%县%' OR customer_descrptn LIKE '%镇%' OR customer_descrptn LIKE '%乡%' OR customer_descrptn LIKE '%村%') GROUP BY deliv_prodctnline_descrptn ORDER BY 提货量_吨 DESC",
+      "chart_type": "pie",
+      "chart_x": "产线",
+      "chart_y": "提货量_吨",
+      "insight_focus": "下沉市场偏好哪些产品线？与整体结构有何差异？"
+    },
+    {
+      "id": "growth_ranking",
+      "title": "增速排名",
+      "icon": "🚀",
+      "description": "各分公司县级市场环比增速排名",
+      "sql": "SELECT brnch_descrptn as 分公司, ROUND(SUM(CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' THEN deliv_qty_mt ELSE 0 END),1) as 上月量_吨, ROUND(SUM(CASE WHEN strftime('%Y%m', deliv_crt_time)='202603' THEN deliv_qty_mt ELSE 0 END),1) as 本月量_吨, ROUND((SUM(CASE WHEN strftime('%Y%m', deliv_crt_time)='202603' THEN deliv_qty_mt ELSE 0 END)-SUM(CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' THEN deliv_qty_mt ELSE 0 END))*100.0/NULLIF(SUM(CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' THEN deliv_qty_mt ELSE 0 END),0),1) as 增速_pct FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) IN ('202602','202603') AND deliv_retrngds_identfctn IS NULL AND (customer_descrptn LIKE '%县%' OR customer_descrptn LIKE '%镇%' OR customer_descrptn LIKE '%乡%' OR customer_descrptn LIKE '%村%') GROUP BY brnch_descrptn HAVING SUM(CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' THEN deliv_qty_mt ELSE 0 END) > 0 ORDER BY 增速_pct DESC",
+      "chart_type": "bar",
+      "chart_x": "分公司",
+      "chart_y": ["增速_pct"],
+      "insight_focus": "哪些分公司下沉市场增长最快？哪些出现下滑？"
+    }
+  ],
+  "summary_prompt": "根据以上下沉市场分析数据（区域分布、产品偏好、增速排名），请以市场拓展视角总结：1)下沉市场整体表现，2)重点增长区域，3)建议的2个下沉策略。不超过150字。",
+  "nav_from_graph": true,
+  "causal_graph_node": "下沉市场分析"
+}

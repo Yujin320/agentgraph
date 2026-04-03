@@ -1,0 +1,91 @@
+{
+  "scenario_id": "销量达成分析",
+  "title": "销量达成分析",
+  "icon": "📈",
+  "description": "本月销量目标达成情况及未达成原因的多维分解",
+  "page_path": "legacy/streamlit/pages/3_销量达成.py",
+  "kpis": [
+    {
+      "label": "整体达成率",
+      "sql": "SELECT ROUND(SUM(d.deliv_qty_mt)*100.0/NULLIF(SUM(p.rllng_planqty_mt),0),1) as v FROM sales_delivery d LEFT JOIN rolling_plan p ON d.brnch_code=p.brnch_code AND d.busline_code=p.busline_code AND strftime('%Y%m', d.deliv_crt_time)=p.stats_yearmth WHERE strftime('%Y%m', d.deliv_crt_time)='202603' AND d.deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "本月实际提货量/滚动计划量"
+    },
+    {
+      "label": "实际提货量（吨）",
+      "sql": "SELECT ROUND(SUM(deliv_qty_mt),1) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.1f} t"
+    },
+    {
+      "label": "计划量（吨）",
+      "sql": "SELECT ROUND(SUM(rllng_planqty_mt),1) as v FROM rolling_plan WHERE stats_yearmth='202603'",
+      "value_col": "v",
+      "format": "{:.1f} t"
+    },
+    {
+      "label": "缺口量（吨）",
+      "sql": "SELECT ROUND(SUM(p.rllng_planqty_mt)-COALESCE(SUM(d.deliv_qty_mt),0),1) as v FROM rolling_plan p LEFT JOIN sales_delivery d ON d.brnch_code=p.brnch_code AND d.busline_code=p.busline_code AND strftime('%Y%m', d.deliv_crt_time)=p.stats_yearmth AND d.deliv_retrngds_identfctn IS NULL WHERE p.stats_yearmth='202603'",
+      "value_col": "v",
+      "format": "{:.1f} t",
+      "help": "计划量与实际量的差值"
+    }
+  ],
+  "stages": [
+    {
+      "id": "branch",
+      "title": "分公司达成",
+      "icon": "🏢",
+      "description": "各分公司达成率与缺口量对比",
+      "sql": "SELECT d.brnch_descrptn as 分公司, ROUND(SUM(d.deliv_qty_mt),1) as 实际量_吨, ROUND(SUM(p.rllng_planqty_mt),1) as 计划量_吨, ROUND(SUM(d.deliv_qty_mt)*100.0/NULLIF(SUM(p.rllng_planqty_mt),0),1) as 达成率_pct FROM sales_delivery d LEFT JOIN rolling_plan p ON d.brnch_code=p.brnch_code AND d.busline_code=p.busline_code AND strftime('%Y%m', d.deliv_crt_time)=p.stats_yearmth WHERE strftime('%Y%m', d.deliv_crt_time)='202603' AND d.deliv_retrngds_identfctn IS NULL GROUP BY d.brnch_descrptn ORDER BY 达成率_pct ASC",
+      "chart_type": "bar",
+      "chart_x": "分公司",
+      "chart_y": [
+        "实际量_吨",
+        "计划量_吨"
+      ],
+      "insight_focus": "哪些分公司达成率最低？缺口最大？"
+    },
+    {
+      "id": "product_line",
+      "title": "产线缺口",
+      "icon": "🔩",
+      "description": "按产线拆解达成缺口，识别短板产线",
+      "sql": "SELECT d.deliv_prodctnline_descrptn as 产线, ROUND(SUM(d.deliv_qty_mt),1) as 实际量_吨, ROUND(SUM(d.deliv_qty_mt)*100.0/NULLIF(SUM(p.rllng_planqty_mt),0),1) as 达成率_pct FROM sales_delivery d LEFT JOIN rolling_plan p ON d.brnch_code=p.brnch_code AND d.busline_code=p.busline_code AND strftime('%Y%m', d.deliv_crt_time)=p.stats_yearmth WHERE strftime('%Y%m', d.deliv_crt_time)='202603' AND d.deliv_retrngds_identfctn IS NULL GROUP BY d.deliv_prodctnline_descrptn ORDER BY 达成率_pct ASC",
+      "chart_type": "bar",
+      "chart_x": "产线",
+      "chart_y": [
+        "实际量_吨"
+      ],
+      "insight_focus": "哪条产线达成率最差？是需求问题还是供给问题？"
+    },
+    {
+      "id": "channel",
+      "title": "渠道结构",
+      "icon": "📡",
+      "description": "各销售渠道的提货量占比",
+      "sql": "SELECT deliv_distri_chnl_descrptn as 渠道, ROUND(SUM(deliv_qty_mt),1) as 提货量_吨, ROUND(100.0*SUM(deliv_qty_mt)/NULLIF((SELECT SUM(deliv_qty_mt) FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL),0),1) as 占比_pct FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_distri_chnl_descrptn ORDER BY 提货量_吨 DESC",
+      "chart_type": "pie",
+      "chart_x": "渠道",
+      "chart_y": "提货量_吨",
+      "insight_focus": "渠道结构是否合理？电商/商超/流通占比变化？"
+    },
+    {
+      "id": "order_hangover",
+      "title": "订单倒挂",
+      "icon": "⚠️",
+      "description": "有订单但尚未发货的积压情况",
+      "sql": "SELECT order_prodctnline_descrptn as 产线, COUNT(*) as 倒挂订单数, ROUND(SUM(CASE WHEN order_dlvry_sts_code!='C' THEN order_qty_mt ELSE 0 END),1) as 未交货量_吨, ROUND(SUM(CASE WHEN order_dlvry_sts_code='A' THEN order_qty_mt ELSE 0 END),1) as 未开始交货_吨 FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND order_dlvry_sts_code!='C' GROUP BY order_prodctnline_descrptn ORDER BY 未交货量_吨 DESC",
+      "chart_type": "bar",
+      "chart_x": "产线",
+      "chart_y": [
+        "未交货量_吨"
+      ],
+      "insight_focus": "订单积压集中在哪个产线？未开始交货的比例有多高？"
+    }
+  ],
+  "summary_prompt": "根据以上销量达成分析数据（分公司达成、产线缺口、渠道结构、订单倒挂），请以区域销售管理层视角总结：1)本月主要问题，2)关键缺口数字，3)最紧迫的2个行动项。不超过150字。",
+  "nav_from_graph": true,
+  "causal_graph_node": "销量达成分析"
+}

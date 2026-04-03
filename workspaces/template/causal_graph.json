@@ -1,0 +1,53 @@
+{
+  "description": "Causal attribution graph for <YOUR DOMAIN>. Each node is a measurable KPI; edges represent causal relationships (parent causes child).",
+  "scenarios": [
+    {
+      "id": "scenario_001",
+      "title": "Example Scenario",
+      "description": "Describe what business question this scenario addresses",
+      "entry_node": "kpi_root",
+      "nodes": [
+        {
+          "id": "kpi_root",
+          "label": "Root KPI Name",
+          "layer": "Top Layer",
+          "metric_sql": "SELECT AVG(metric_col) AS value FROM your_table WHERE period = '{current_period}'",
+          "threshold": 0.9,
+          "threshold_op": "<",
+          "threshold_desc": "Below 90% is abnormal",
+          "children": ["cause_level1_a", "cause_level1_b"]
+        },
+        {
+          "id": "cause_level1_a",
+          "label": "Possible Cause A",
+          "layer": "Mid Layer",
+          "metric_sql": "SELECT COUNT(*) AS value FROM your_table WHERE condition = 'X' AND period = '{current_period}'",
+          "threshold": 10,
+          "threshold_op": ">",
+          "threshold_desc": "More than 10 is abnormal",
+          "children": ["cause_level2_a"]
+        },
+        {
+          "id": "cause_level1_b",
+          "label": "Possible Cause B",
+          "layer": "Mid Layer",
+          "metric_sql": "SELECT SUM(qty) AS value FROM your_table WHERE period = '{current_period}'",
+          "threshold": 1000,
+          "threshold_op": "<",
+          "threshold_desc": "Below 1000 is abnormal",
+          "children": []
+        },
+        {
+          "id": "cause_level2_a",
+          "label": "Root Cause Candidate",
+          "layer": "Bottom Layer",
+          "metric_sql": "SELECT AVG(rate) AS value FROM another_table WHERE period = '{current_period}'",
+          "threshold": 0.85,
+          "threshold_op": "<",
+          "threshold_desc": "Below 85% is abnormal",
+          "children": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,574 @@
+{
+  "version": "2.0",
+  "description": "Arawana供应链归因图谱 v2.0 — 6层因果网络，覆盖供应→生产→库存→销售→客户→成本全链路",
+  "layers": {
+    "供应层": {
+      "color": "#8B5CF6",
+      "nodes": {
+        "原材料到货延迟": {
+          "tables": ["procurement"],
+          "metric_sql": "SELECT ROUND(AVG(delay_days),1) as v FROM procurement WHERE status='延迟' AND po_yearmth='{ym}'",
+          "threshold": {"warn": 3, "alert": 7},
+          "description": "采购订单平均延迟天数",
+          "drill_down": {
+            "by_supplier": "SELECT supplier_code, supplier_name, ROUND(AVG(delay_days),1) as avg_delay_days, COUNT(*) as delayed_orders FROM procurement WHERE status='延迟' AND po_yearmth='{ym}' GROUP BY supplier_code, supplier_name ORDER BY avg_delay_days DESC",
+            "by_material": "SELECT raw_material_name, ROUND(AVG(delay_days),1) as avg_delay_days, COUNT(*) as delayed_orders, target_plant_descrptn FROM procurement WHERE status='延迟' AND po_yearmth='{ym}' GROUP BY raw_material_name, target_plant_descrptn ORDER BY avg_delay_days DESC"
+          }
+        },
+        "供应商交期不稳定": {
+          "tables": ["procurement"],
+          "metric_sql": "SELECT COUNT(DISTINCT supplier_code) as v FROM procurement WHERE delay_days > 5 AND po_yearmth='{ym}'",
+          "threshold": {"warn": 2, "alert": 4},
+          "description": "延迟超5天的供应商数量"
+        }
+      }
+    },
+    "生产层": {
+      "color": "#F59E0B",
+      "nodes": {
+        "产量不足": {
+          "tables": ["production_output"],
+          "metric_sql": "SELECT ROUND(100.0*SUM(actual_qty_mt)/NULLIF(SUM(planned_qty_mt),0),1) as v FROM production_output WHERE record_yearmth='{ym}'",
+          "threshold": {"warn": 85, "alert": 70},
+          "threshold_direction": "below",
+          "description": "实际产量/计划产量 完成率",
+          "drill_down": {
+            "by_factory": "SELECT plant_code, plant_descrptn, ROUND(100.0*SUM(actual_qty_mt)/NULLIF(SUM(planned_qty_mt),0),1) as completion_rate FROM production_output WHERE record_yearmth='{ym}' GROUP BY plant_code, plant_descrptn ORDER BY completion_rate",
+            "by_line": "SELECT production_line, ROUND(100.0*SUM(actual_qty_mt)/NULLIF(SUM(planned_qty_mt),0),1) as completion_rate FROM production_output WHERE record_yearmth='{ym}' AND plant_code='{plant}' GROUP BY production_line ORDER BY completion_rate"
+          }
+        },
+        "良品率下降": {
+          "tables": ["quality_inspection"],
+          "metric_sql": "SELECT ROUND(AVG(defect_rate)*100,2) as v FROM quality_inspection WHERE inspection_yearmth='{ym}'",
+          "threshold": {"warn": 3, "alert": 5},
+          "description": "平均质检不合格率(%)",
+          "drill_down": {
+            "by_factory": "SELECT plant_descrptn, ROUND(AVG(defect_rate)*100,2) as defect_rate_pct, COUNT(*) as batch_cnt FROM quality_inspection WHERE inspection_yearmth='{ym}' GROUP BY plant_descrptn ORDER BY defect_rate_pct DESC",
+            "by_line": "SELECT production_line, ROUND(AVG(defect_rate)*100,2) as defect_rate_pct, COUNT(*) as batch_cnt FROM quality_inspection WHERE inspection_yearmth='{ym}' AND plant_code='{plant}' GROUP BY production_line ORDER BY defect_rate_pct DESC"
+          }
+        },
+        "加班工时异常": {
+          "tables": ["overtime_hours"],
+          "metric_sql": "SELECT ROUND(SUM(overtime_hours),0) as v FROM overtime_hours WHERE record_yearmth='{ym}'",
+          "threshold": {"warn": 5000, "alert": 8000},
+          "description": "月度总加班工时",
+          "drill_down": {
+            "by_factory": "SELECT plant_descrptn, ROUND(SUM(overtime_hours),0) as total_ot_hours, SUM(worker_count) as total_workers FROM overtime_hours WHERE record_yearmth='{ym}' GROUP BY plant_descrptn ORDER BY total_ot_hours DESC",
+            "by_workshop": "SELECT workshop, ROUND(SUM(overtime_hours),0) as total_ot_hours, SUM(worker_count) as total_workers FROM overtime_hours WHERE record_yearmth='{ym}' AND plant_code='{plant}' GROUP BY workshop ORDER BY total_ot_hours DESC"
+          }
+        }
+      }
+    },
+    "库存层": {
+      "color": "#10B981",
+      "nodes": {
+        "库存告急": {
+          "tables": ["inventory"],
+          "metric_sql": "SELECT COUNT(*) as v FROM inventory WHERE stock_status IN ('缺货','低于安全库存') AND snapshot_yearmth='{ym}'",
+          "threshold": {"warn": 10, "alert": 30},
+          "description": "库存告急的物料-工厂记录数",
+          "drill_down": {
+            "by_factory": "SELECT plant_descrptn, COUNT(*) as shortage_items, SUM(CASE WHEN stock_status='缺货' THEN 1 ELSE 0 END) as stockout_items FROM inventory WHERE stock_status IN ('缺货','低于安全库存') AND snapshot_yearmth='{ym}' GROUP BY plant_descrptn ORDER BY shortage_items DESC",
+            "by_material": "SELECT mat_name, plant_descrptn, stock_status, ROUND(days_of_supply,1) as days_of_supply FROM inventory WHERE stock_status IN ('缺货','低于安全库存') AND snapshot_yearmth='{ym}' ORDER BY days_of_supply ASC"
+          }
+        }
+      }
+    },
+    "销售层": {
+      "color": "#3B82F6",
+      "nodes": {
+        "销量达成不足": {
+          "tables": ["sales_delivery", "rolling_plan"],
+          "metric_sql": "SELECT ROUND(SUM(d.deliv_qty_mt)*100.0/NULLIF(SUM(p.rllng_planqty_mt),0),1) as v FROM sales_delivery d LEFT JOIN rolling_plan p ON d.brnch_code=p.brnch_code AND d.busline_code=p.busline_code AND strftime('%Y%m',d.deliv_crt_time)=p.stats_yearmth WHERE strftime('%Y%m',d.deliv_crt_time)='{ym}' AND d.deliv_retrngds_identfctn IS NULL",
+          "threshold": {"warn": 80, "alert": 60},
+          "threshold_direction": "below",
+          "description": "销量达成率(%)"
+        },
+        "外调品增加": {
+          "tables": ["sales_delivery"],
+          "metric_sql": "SELECT ROUND(100.0*SUM(CASE WHEN is_external_transfer=1 THEN deliv_qty_mt ELSE 0 END)/NULLIF(SUM(deliv_qty_mt),0),1) as v FROM sales_delivery WHERE strftime('%Y%m',deliv_crt_time)='{ym}' AND deliv_retrngds_identfctn IS NULL",
+          "threshold": {"warn": 25, "alert": 40},
+          "description": "外调品占比(%)",
+          "drill_down": {
+            "by_factory": "SELECT deliv_sply_plant_descrptn, ROUND(SUM(deliv_qty_mt),1) as transfer_qty_mt, COUNT(DISTINCT delivnum) as order_cnt FROM sales_delivery WHERE is_external_transfer=1 AND strftime('%Y%m',deliv_crt_time)='{ym}' AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_sply_plant_descrptn ORDER BY transfer_qty_mt DESC",
+            "by_material": "SELECT deliv_mat_name, deliv_prodctnline_descrptn, ROUND(SUM(deliv_qty_mt),1) as transfer_qty_mt FROM sales_delivery WHERE is_external_transfer=1 AND strftime('%Y%m',deliv_crt_time)='{ym}' AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_mat_name, deliv_prodctnline_descrptn ORDER BY transfer_qty_mt DESC"
+          }
+        },
+        "订单倒挂": {
+          "tables": ["sales_order"],
+          "metric_sql": "SELECT ROUND(100.0*SUM(CASE WHEN order_dlvry_sts_code!='C' THEN order_qty_mt ELSE 0 END)/NULLIF(SUM(order_qty_mt),0),1) as v FROM sales_order WHERE strftime('%Y%m',order_crt_date)='{ym}'",
+          "threshold": {"warn": 15, "alert": 30},
+          "description": "订单倒挂率(%)"
+        },
+        "促销拉动": {
+          "tables": ["promotion"],
+          "metric_sql": "SELECT COUNT(*) as v FROM promotion WHERE promo_yearmth='{ym}'",
+          "threshold": {"warn": 15, "alert": 25},
+          "description": "当月促销活动数"
+        }
+      }
+    },
+    "客户层": {
+      "color": "#EF4444",
+      "nodes": {
+        "客户投诉增加": {
+          "tables": ["customer_complaint"],
+          "metric_sql": "SELECT COUNT(*) as v FROM customer_complaint WHERE complaint_yearmth='{ym}'",
+          "threshold": {"warn": 50, "alert": 80},
+          "description": "当月客户投诉数",
+          "drill_down": {
+            "by_region": "SELECT brnch_descrptn, COUNT(*) as complaint_cnt, ROUND(AVG(resolution_days),1) as avg_resolution_days FROM customer_complaint WHERE complaint_yearmth='{ym}' GROUP BY brnch_descrptn ORDER BY complaint_cnt DESC",
+            "by_complaint_type": "SELECT complaint_type, severity, COUNT(*) as complaint_cnt, SUM(CASE WHEN is_resolved=0 THEN 1 ELSE 0 END) as unresolved_cnt FROM customer_complaint WHERE complaint_yearmth='{ym}' GROUP BY complaint_type, severity ORDER BY complaint_cnt DESC"
+          }
+        },
+        "交期延迟投诉": {
+          "tables": ["customer_complaint"],
+          "metric_sql": "SELECT COUNT(*) as v FROM customer_complaint WHERE complaint_type='交期延迟' AND complaint_yearmth='{ym}'",
+          "threshold": {"warn": 15, "alert": 30},
+          "description": "交期延迟类投诉数"
+        }
+      }
+    },
+    "成本层": {
+      "color": "#6366F1",
+      "nodes": {
+        "物流成本上升": {
+          "tables": ["sales_delivery"],
+          "metric_sql": "SELECT ROUND(AVG(logistics_cost_per_mt),1) as v FROM sales_delivery WHERE is_external_transfer=1 AND strftime('%Y%m',deliv_crt_time)='{ym}' AND deliv_retrngds_identfctn IS NULL",
+          "threshold": {"warn": 200, "alert": 300},
+          "description": "外调品平均物流成本(元/吨)"
+        },
+        "加班成本上升": {
+          "tables": ["overtime_hours"],
+          "metric_sql": "SELECT ROUND(SUM(overtime_cost),0) as v FROM overtime_hours WHERE record_yearmth='{ym}'",
+          "threshold": {"warn": 500000, "alert": 800000},
+          "description": "月度总加班成本(元)"
+        },
+        "质量损失成本": {
+          "tables": ["production_output"],
+          "metric_sql": "SELECT ROUND(SUM(scrap_qty_mt),1) as v FROM production_output WHERE record_yearmth='{ym}'",
+          "threshold": {"warn": 50, "alert": 100},
+          "description": "月度报废量(吨)"
+        }
+      }
+    }
+  },
+  "causal_edges": [
+    {"from": "原材料到货延迟", "to": "产量不足", "label": "原料不足导致停产/减产"},
+    {"from": "供应商交期不稳定", "to": "原材料到货延迟", "label": "供应商问题导致延迟"},
+    {"from": "产量不足", "to": "库存告急", "label": "产出不足补货不及时"},
+    {"from": "产量不足", "to": "加班工时异常", "label": "赶工补产导致加班"},
+    {"from": "库存告急", "to": "外调品增加", "label": "本地缺货需外部调入"},
+    {"from": "库存告急", "to": "交期延迟投诉", "label": "缺货导致交期延误"},
+    {"from": "外调品增加", "to": "物流成本上升", "label": "跨区调货运费高"},
+    {"from": "促销拉动", "to": "订单倒挂", "label": "促销引发订单突增积压"},
+    {"from": "促销拉动", "to": "销量达成不足", "label": "促销力度不足或渠道结构问题", "edge_type": "inverse"},
+    {"from": "订单倒挂", "to": "加班工时异常", "label": "赶订单导致加班"},
+    {"from": "加班工时异常", "to": "良品率下降", "label": "疲劳作业质量下降"},
+    {"from": "加班工时异常", "to": "加班成本上升", "label": "加班直接推高人力成本"},
+    {"from": "良品率下降", "to": "客户投诉增加", "label": "质量问题引发客诉"},
+    {"from": "良品率下降", "to": "质量损失成本", "label": "不合格品报废损失"},
+    {"from": "良品率下降", "to": "产量不足", "label": "返工导致有效产出下降"},
+    {"from": "客户投诉增加", "to": "销量达成不足", "label": "客户流失影响销量"},
+    {"from": "交期延迟投诉", "to": "客户投诉增加", "label": "交期问题是投诉主因之一"}
+  ],
+  "causal_chains": [
+    {
+      "id": "supply_disruption",
+      "name": "供应链中断传导链",
+      "path": ["原材料到货延迟", "产量不足", "库存告急", "外调品增加", "物流成本上升"],
+      "trigger_keywords": ["为什么外调品增加", "物流成本为什么高", "外调原因", "原材料延迟影响", "供应中断"]
+    },
+    {
+      "id": "quality_cascade",
+      "name": "质量问题传导链",
+      "path": ["加班工时异常", "良品率下降", "客户投诉增加", "销量达成不足"],
+      "trigger_keywords": ["为什么投诉增加", "质量问题原因", "良品率为什么下降", "质量影响销量", "客诉原因"]
+    },
+    {
+      "id": "demand_spike",
+      "name": "需求突增传导链",
+      "path": ["促销拉动", "订单倒挂", "加班工时异常", "良品率下降"],
+      "trigger_keywords": ["订单为什么积压", "加班原因", "促销影响", "促销导致加班", "订单倒挂原因"]
+    },
+    {
+      "id": "customer_impact",
+      "name": "库存缺货客户影响链",
+      "path": ["库存告急", "交期延迟投诉", "客户投诉增加", "销量达成不足"],
+      "trigger_keywords": ["缺货导致投诉", "交期延迟原因", "库存影响销量", "为什么交期延迟", "客户流失原因"]
+    },
+    {
+      "id": "cost_escalation",
+      "name": "供应延迟成本上升链",
+      "path": ["供应商交期不稳定", "原材料到货延迟", "产量不足", "加班工时异常", "加班成本上升"],
+      "trigger_keywords": ["加班成本为什么高", "供应商影响成本", "为什么加班成本上升", "人力成本上升原因", "加班费用高"]
+    },
+    {
+      "id": "delivery_impact",
+      "name": "产能不足交付影响链",
+      "path": ["产量不足", "库存告急", "交期延迟投诉", "客户投诉增加"],
+      "trigger_keywords": ["产量不足影响", "为什么交期延迟投诉多", "产能影响客户", "产量影响交付", "生产不足导致投诉"]
+    },
+    {
+      "id": "full_demand_surge",
+      "name": "促销全链路客户影响链",
+      "path": ["促销拉动", "订单倒挂", "加班工时异常", "良品率下降", "客户投诉增加"],
+      "trigger_keywords": ["促销导致投诉", "促销全链路影响", "促销引发质量问题", "活动影响客户", "促销负面影响"]
+    },
+    {
+      "id": "supply_to_logistics",
+      "name": "供应中断物流成本链",
+      "path": ["供应商交期不稳定", "原材料到货延迟", "产量不足", "库存告急", "外调品增加", "物流成本上升"],
+      "trigger_keywords": ["供应商影响物流成本", "为什么要外调", "供应链全链路成本", "供应商问题导致外调", "物流费用溯源"]
+    }
+  ],
+  "scenarios": {
+    "外调品分析": {
+      "description": "分析川渝地区从外部工厂调入产品的情况、成本及优化建议",
+      "start_node": "外调品增加",
+      "keywords": ["外调", "调货", "外地", "运费", "物流成本", "本地生产", "供货工厂"],
+      "sub_questions": {
+        "外调品总量与占比": {
+          "tables": ["sales_delivery"],
+          "filter": "is_external_transfer = 1",
+          "measures": ["SUM(deliv_qty_mt)", "COUNT(DISTINCT delivnum)"],
+          "dimensions": ["月份", "分公司", "产线"],
+          "description": "统计外调品的提货量、提单数及占总量比例"
+        },
+        "外调品产品结构": {
+          "tables": ["sales_delivery"],
+          "filter": "is_external_transfer = 1",
+          "measures": ["SUM(deliv_qty_mt)"],
+          "dimensions": ["deliv_mat_name", "deliv_prodctnline_descrptn"],
+          "description": "哪些产品/产线的外调量最大"
+        },
+        "外调品来源工厂": {
+          "tables": ["sales_delivery"],
+          "filter": "is_external_transfer = 1",
+          "measures": ["SUM(deliv_qty_mt)"],
+          "dimensions": ["deliv_sply_plant_descrptn"],
+          "description": "外调品来自哪些工厂"
+        },
+        "外调品物流成本对比": {
+          "tables": ["sales_delivery"],
+          "measures": ["AVG(logistics_cost_per_mt)"],
+          "dimensions": ["is_external_transfer"],
+          "description": "外调品vs本地供货的平均物流成本差异"
+        },
+        "外调品月度趋势": {
+          "tables": ["sales_delivery"],
+          "filter": "is_external_transfer = 1",
+          "measures": ["SUM(deliv_qty_mt)"],
+          "dimensions": ["strftime('%Y-%m', deliv_crt_time)"],
+          "description": "外调品数量的月度变化趋势",
+          "chart_type": "line"
+        },
+        "本地可生产但仍外调": {
+          "tables": ["sales_delivery"],
+          "description": "识别本地可以生产但仍从外地调入的产品（优化重点）",
+          "note": "需结合物料的local_producible属性——当前仿真数据中通过is_external_transfer和产品名推断"
+        }
+      }
+    },
+    "销量达成分析": {
+      "description": "分析销量目标完成情况及未达成的原因",
+      "start_node": "销量达成不足",
+      "keywords": ["达成", "完成率", "进度", "计划", "滚动", "缺口", "差多少", "目标"],
+      "sub_questions": {
+        "整体达成率": {
+          "tables": ["sales_delivery", "rolling_plan"],
+          "join": "按busline_code+brnch_code+stats_yearmth关联",
+          "measures": ["SUM(deliv_qty_mt) / SUM(rllng_planqty_mt)"],
+          "description": "当月累计提货量vs滚动计划量"
+        },
+        "分公司达成率": {
+          "tables": ["sales_delivery", "rolling_plan"],
+          "dimensions": ["brnch_descrptn"],
+          "description": "按分公司拆解达成情况"
+        },
+        "产线达成率": {
+          "tables": ["sales_delivery", "rolling_plan"],
+          "dimensions": ["deliv_prodctnline_descrptn"],
+          "description": "按产线拆解达成缺口"
+        },
+        "客户维度缺口": {
+          "tables": ["sales_delivery", "rolling_plan"],
+          "dimensions": ["deliv_soldto_name"],
+          "description": "计划有量但实际挂零的客户"
+        },
+        "渠道结构": {
+          "tables": ["sales_delivery"],
+          "dimensions": ["deliv_distri_chnl_descrptn"],
+          "measures": ["SUM(deliv_qty_mt)"],
+          "description": "各渠道的提货量占比及环比变化",
+          "chart_type": "pie"
+        }
+      }
+    },
+    "订单交付分析": {
+      "description": "分析订单与提单的倒挂情况，识别交付异常",
+      "start_node": "订单倒挂",
+      "keywords": ["倒挂", "未交货", "积压", "订单", "发货", "超期", "卡单"],
+      "sub_questions": {
+        "整体倒挂率": {
+          "tables": ["sales_order"],
+          "filter": "order_dlvry_sts_code != 'C'",
+          "measures": ["SUM(order_qty_mt)", "COUNT(*)"],
+          "description": "未完成交货的订单占比"
+        },
+        "倒挂按产线分布": {
+          "tables": ["sales_order"],
+          "filter": "order_dlvry_sts_code != 'C'",
+          "dimensions": ["order_prodctnline_descrptn"],
+          "description": "哪个产线积压最严重"
+        },
+        "月末挤水分析": {
+          "tables": ["sales_order"],
+          "filter": "order_crt_date >= 当月17号",
+          "dimensions": ["brnch_descrptn", "order_pymnt_sts"],
+          "description": "月末突增订单的真实打款率"
+        }
+      }
+    },
+    "加班工时分析": {
+      "description": "分析工厂加班工时情况，识别异常和优化空间",
+      "start_node": "加班工时异常",
+      "keywords": ["加班", "工时", "overtime", "人工成本", "排班", "设备故障"],
+      "sub_questions": {
+        "加班工时趋势": {
+          "tables": ["overtime_hours"],
+          "measures": ["SUM(overtime_hours)", "SUM(overtime_cost)"],
+          "dimensions": ["record_yearmth"],
+          "description": "各月加班工时和成本趋势",
+          "chart_type": "bar"
+        },
+        "车间加班对比": {
+          "tables": ["overtime_hours"],
+          "dimensions": ["workshop"],
+          "description": "哪个车间加班最多"
+        },
+        "加班原因分布": {
+          "tables": ["overtime_hours"],
+          "dimensions": ["overtime_reason"],
+          "description": "加班原因的占比分析",
+          "chart_type": "pie"
+        },
+        "工厂对比": {
+          "tables": ["overtime_hours"],
+          "dimensions": ["plant_descrptn"],
+          "description": "各工厂加班水平对比"
+        }
+      }
+    },
+    "库存分析": {
+      "description": "分析工厂各物料的库存水平、告急情况及出入库趋势",
+      "start_node": "库存告急",
+      "keywords": ["库存", "缺货", "安全库存", "库存告急", "可供天数", "出入库", "补货"],
+      "sub_questions": {
+        "库存整体水平": {
+          "tables": ["inventory"],
+          "measures": ["SUM(stock_qty_mt)", "AVG(days_of_supply)"],
+          "dimensions": ["snapshot_yearmth"],
+          "description": "各月库存总量及平均可供天数趋势"
+        },
+        "库存告急情况": {
+          "tables": ["inventory"],
+          "filter": "stock_status IN ('缺货', '低于安全库存')",
+          "measures": ["COUNT(*)", "MIN(days_of_supply)"],
+          "dimensions": ["plant_descrptn", "mat_name"],
+          "description": "当前库存告急的工厂和物料明细"
+        },
+        "出入库趋势": {
+          "tables": ["inventory"],
+          "measures": ["SUM(inbound_qty_mt)", "SUM(outbound_qty_mt)"],
+          "dimensions": ["snapshot_yearmth", "plant_descrptn"],
+          "description": "月度出入库量的变化趋势",
+          "chart_type": "line"
+        },
+        "工厂库存对比": {
+          "tables": ["inventory"],
+          "measures": ["SUM(stock_qty_mt)", "AVG(days_of_supply)"],
+          "dimensions": ["plant_descrptn"],
+          "description": "各工厂库存充裕度对比",
+          "chart_type": "bar"
+        }
+      }
+    },
+    "采购供应分析": {
+      "description": "分析原材料采购延迟情况、供应商表现及采购成本趋势",
+      "start_node": "原材料到货延迟",
+      "keywords": ["采购", "原材料", "供应商", "延迟", "到货", "供应链", "采购金额"],
+      "sub_questions": {
+        "采购延迟情况": {
+          "tables": ["procurement"],
+          "filter": "delay_days > 3",
+          "measures": ["COUNT(*)", "AVG(delay_days)"],
+          "dimensions": ["supplier_name", "raw_material_name"],
+          "description": "延迟交货的采购单，识别问题供应商"
+        },
+        "供应商表现": {
+          "tables": ["procurement"],
+          "measures": ["COUNT(*)", "SUM(received_qty_mt)/SUM(order_qty_mt)", "AVG(delay_days)"],
+          "dimensions": ["supplier_name"],
+          "description": "各供应商的到货率和平均延迟天数对比"
+        },
+        "采购成本趋势": {
+          "tables": ["procurement"],
+          "measures": ["SUM(total_amount)", "AVG(unit_price)"],
+          "dimensions": ["po_yearmth", "raw_material_name"],
+          "description": "各月原材料采购金额及单价趋势",
+          "chart_type": "line"
+        },
+        "到货完成率": {
+          "tables": ["procurement"],
+          "measures": ["SUM(received_qty_mt)/SUM(order_qty_mt)"],
+          "dimensions": ["po_yearmth", "target_plant_descrptn"],
+          "description": "按工厂和月份的采购到货完成率"
+        }
+      }
+    },
+    "生产质量分析": {
+      "description": "分析工厂生产产量达成、良品率及质检异常情况",
+      "start_node": "良品率下降",
+      "keywords": ["生产", "产量", "良品率", "质检", "不合格", "报废", "质量", "产出", "停机"],
+      "sub_questions": {
+        "产量达成情况": {
+          "tables": ["production_output"],
+          "measures": ["SUM(actual_qty_mt)/SUM(planned_qty_mt)"],
+          "dimensions": ["record_yearmth", "plant_descrptn"],
+          "description": "各工厂当月产量完成率"
+        },
+        "良品率分析": {
+          "tables": ["production_output"],
+          "measures": ["AVG(yield_rate)", "SUM(scrap_qty_mt)"],
+          "dimensions": ["plant_descrptn", "mat_name"],
+          "description": "各工厂/产品的平均良品率及报废量"
+        },
+        "质检不合格趋势": {
+          "tables": ["quality_inspection"],
+          "filter": "result = '不合格'",
+          "measures": ["COUNT(*)", "AVG(defect_rate)"],
+          "dimensions": ["inspection_yearmth", "plant_descrptn"],
+          "description": "月度质检不合格批次数及不合格率趋势",
+          "chart_type": "line"
+        },
+        "缺陷类型分布": {
+          "tables": ["quality_inspection"],
+          "filter": "result = '不合格'",
+          "measures": ["COUNT(*)"],
+          "dimensions": ["defect_type", "severity"],
+          "description": "不合格批次按缺陷类型和严重程度分布",
+          "chart_type": "pie"
+        }
+      }
+    },
+    "客户投诉分析": {
+      "description": "分析客户投诉数量、类型、严重程度及处理效率",
+      "start_node": "客户投诉增加",
+      "keywords": ["投诉", "客诉", "退换货", "客户满意度", "处理天数", "质量投诉"],
+      "sub_questions": {
+        "投诉总量趋势": {
+          "tables": ["customer_complaint"],
+          "measures": ["COUNT(*)"],
+          "dimensions": ["complaint_yearmth", "complaint_type"],
+          "description": "月度投诉数量及类型分布趋势",
+          "chart_type": "line"
+        },
+        "分公司投诉对比": {
+          "tables": ["customer_complaint"],
+          "measures": ["COUNT(*)", "AVG(resolution_days)"],
+          "dimensions": ["brnch_descrptn"],
+          "description": "各分公司投诉量及平均处理天数对比"
+        },
+        "严重投诉分析": {
+          "tables": ["customer_complaint"],
+          "filter": "severity IN ('重要', '紧急')",
+          "measures": ["COUNT(*)", "SUM(CASE WHEN is_resolved=0 THEN 1 ELSE 0 END)"],
+          "dimensions": ["brnch_descrptn", "complaint_type"],
+          "description": "重要和紧急投诉的分布及未解决情况"
+        },
+        "质量投诉与批次关联": {
+          "tables": ["customer_complaint", "quality_inspection"],
+          "join": "related_batch_id = batch_id",
+          "measures": ["COUNT(*)"],
+          "dimensions": ["defect_type"],
+          "description": "可追溯到质检批次的投诉，分析缺陷类型与投诉的关联"
+        }
+      }
+    },
+    "促销效果分析": {
+      "description": "分析促销活动的覆盖范围、费用执行及对销量的拉动效果",
+      "start_node": "促销拉动",
+      "keywords": ["促销", "活动", "折扣", "提升", "预算", "促销费用", "拉动"],
+      "sub_questions": {
+        "促销活动概览": {
+          "tables": ["promotion"],
+          "measures": ["COUNT(*)", "SUM(budget_amount)", "SUM(actual_spend)"],
+          "dimensions": ["promo_yearmth", "channel_descrptn"],
+          "description": "各月各渠道促销活动数及费用执行情况"
+        },
+        "促销费用执行": {
+          "tables": ["promotion"],
+          "measures": ["SUM(budget_amount)", "SUM(actual_spend)"],
+          "dimensions": ["brnch_descrptn", "promo_name"],
+          "description": "促销预算vs实际花费对比，识别超支情况"
+        },
+        "促销对销量拉动": {
+          "tables": ["promotion", "sales_order"],
+          "join": "brnch_code + mat_code + promo_yearmth",
+          "measures": ["SUM(order_qty_mt)", "expected_lift_pct"],
+          "dimensions": ["brnch_descrptn", "channel_descrptn"],
+          "description": "促销期间订单量与预期提升的对比"
+        },
+        "渠道促销效率": {
+          "tables": ["promotion"],
+          "measures": ["AVG(actual_spend/budget_amount)", "AVG(expected_lift_pct)"],
+          "dimensions": ["channel_descrptn"],
+          "description": "不同渠道的促销费效比对比",
+          "chart_type": "bar"
+        }
+      }
+    }
+  },
+  "local_plants": ["GH01", "CQ01", "CD01"],
+  "current_region": "川渝大区（西南区 YH0021）",
+  "entities": {
+    "factories": [
+      {"code": "GH01", "name": "广汉工厂", "region": "川渝大区", "type": "factory"},
+      {"code": "CQ01", "name": "重庆工厂", "region": "川渝大区", "type": "factory"},
+      {"code": "CD01", "name": "成都工厂", "region": "川渝大区", "type": "factory"}
+    ],
+    "suppliers": [
+      {"code": "SUP001", "name": "益海嘉里原料", "material": "大豆原油", "type": "supplier"},
+      {"code": "SUP002", "name": "中粮油脂", "material": "菜籽原油", "type": "supplier"},
+      {"code": "SUP003", "name": "汇福粮油", "material": "花生原油", "type": "supplier"}
+    ],
+    "production_lines": [
+      {"code": "GH01-A", "name": "广汉灌装线A", "factory": "GH01", "type": "production_line"},
+      {"code": "GH01-B", "name": "广汉精炼线B", "factory": "GH01", "type": "production_line"},
+      {"code": "CQ01-A", "name": "重庆灌装线A", "factory": "CQ01", "type": "production_line"},
+      {"code": "CQ01-B", "name": "重庆包装线B", "factory": "CQ01", "type": "production_line"},
+      {"code": "CD01-A", "name": "成都灌装线A", "factory": "CD01", "type": "production_line"}
+    ],
+    "material_categories": [
+      {"code": "MAT01", "name": "大豆油", "category": "食用油", "type": "material"},
+      {"code": "MAT02", "name": "菜籽油", "category": "食用油", "type": "material"},
+      {"code": "MAT03", "name": "花生油", "category": "食用油", "type": "material"},
+      {"code": "MAT04", "name": "调和油", "category": "食用油", "type": "material"}
+    ]
+  },
+  "entity_relations": [
+    {"from": "GH01", "to": "GH01-A", "relation": "contains", "label": "包含产线"},
+    {"from": "GH01", "to": "GH01-B", "relation": "contains", "label": "包含产线"},
+    {"from": "CQ01", "to": "CQ01-A", "relation": "contains", "label": "包含产线"},
+    {"from": "CQ01", "to": "CQ01-B", "relation": "contains", "label": "包含产线"},
+    {"from": "CD01", "to": "CD01-A", "relation": "contains", "label": "包含产线"},
+    {"from": "SUP001", "to": "GH01", "relation": "supplies", "label": "供应大豆原油"},
+    {"from": "SUP002", "to": "CQ01", "relation": "supplies", "label": "供应菜籽原油"},
+    {"from": "SUP003", "to": "CD01", "relation": "supplies", "label": "供应花生原油"},
+    {"from": "GH01-A", "to": "MAT01", "relation": "produces", "label": "生产大豆油"},
+    {"from": "CQ01-A", "to": "MAT02", "relation": "produces", "label": "生产菜籽油"},
+    {"from": "CD01-A", "to": "MAT03", "relation": "produces", "label": "生产花生油"}
+  ],
+  "_extensibility_note": "新增场景: 在scenarios下添加新key即可。新增子问题: 在对应scenario的sub_questions下添加。新增因果节点: 在layers对应层的nodes下添加，同时在causal_edges中添加关联边。新增实体: 在entities对应类别下添加，并在entity_relations中添加关联关系。drill_down字段支持按实体维度下钻归因，SQL中{ym}和{plant}为运行时占位符。"
+}

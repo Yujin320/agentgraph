@@ -1,0 +1,74 @@
+{
+  "scenario_id": "月末挤水分析",
+  "title": "月末挤水分析",
+  "icon": "💧",
+  "description": "分析月末订单集中度，识别月末冲量和虚假繁荣风险",
+  "kpis": [
+    {
+      "label": "最后3天订单量",
+      "sql": "SELECT ROUND(SUM(order_qty_mt),1) as v FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND CAST(strftime('%d', order_crt_date) AS INTEGER) >= 29",
+      "value_col": "v",
+      "format": "{:.1f} t",
+      "help": "本月最后3天（29-31日）创建的订单总量"
+    },
+    {
+      "label": "占月总订单比",
+      "sql": "SELECT ROUND(SUM(CASE WHEN CAST(strftime('%d', order_crt_date) AS INTEGER)>=29 THEN order_qty_mt ELSE 0 END)*100.0/NULLIF(SUM(order_qty_mt),0),1) as v FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603'",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "最后3天订单量占本月总订单量的比例"
+    },
+    {
+      "label": "未发货订单占比",
+      "sql": "SELECT ROUND(COUNT(CASE WHEN order_dlvry_sts_code='A' THEN 1 END)*100.0/NULLIF(COUNT(*),0),1) as v FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND CAST(strftime('%d', order_crt_date) AS INTEGER)>=29",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "最后3天订单中零交货的比例"
+    },
+    {
+      "label": "异常分公司数",
+      "sql": "SELECT COUNT(*) as v FROM (SELECT order_brnch_descrptn FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' GROUP BY order_brnch_descrptn HAVING SUM(CASE WHEN CAST(strftime('%d', order_crt_date) AS INTEGER)>=29 THEN order_qty_mt ELSE 0 END)*100.0/NULLIF(SUM(order_qty_mt),0) > 30)",
+      "value_col": "v",
+      "format": "{:.0f}",
+      "help": "最后3天订单占比超过30%的分公司数量"
+    }
+  ],
+  "stages": [
+    {
+      "id": "daily_rhythm",
+      "title": "日维度订单节奏",
+      "icon": "📅",
+      "description": "本月每日订单量分布，观察月末集中度",
+      "sql": "SELECT strftime('%d', order_crt_date) as 日期, ROUND(SUM(order_qty_mt),1) as 订单量_吨, COUNT(*) as 订单数 FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' GROUP BY strftime('%d', order_crt_date) ORDER BY 日期",
+      "chart_type": "bar",
+      "chart_x": "日期",
+      "chart_y": ["订单量_吨"],
+      "insight_focus": "订单量是否均匀分布？月末是否出现明显峰值？"
+    },
+    {
+      "id": "branch_end_concentration",
+      "title": "分公司末尾集中度",
+      "icon": "🏢",
+      "description": "各分公司最后3天订单占比排名",
+      "sql": "SELECT order_brnch_descrptn as 分公司, ROUND(SUM(order_qty_mt),1) as 月总订单量_吨, ROUND(SUM(CASE WHEN CAST(strftime('%d', order_crt_date) AS INTEGER)>=29 THEN order_qty_mt ELSE 0 END),1) as 末3天订单量_吨, ROUND(SUM(CASE WHEN CAST(strftime('%d', order_crt_date) AS INTEGER)>=29 THEN order_qty_mt ELSE 0 END)*100.0/NULLIF(SUM(order_qty_mt),0),1) as 末3天占比_pct FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' GROUP BY order_brnch_descrptn ORDER BY 末3天占比_pct DESC",
+      "chart_type": "bar",
+      "chart_x": "分公司",
+      "chart_y": ["末3天占比_pct"],
+      "insight_focus": "哪些分公司月末集中度最高？是否存在冲量嫌疑？"
+    },
+    {
+      "id": "payment_delivery_match",
+      "title": "打款发货匹配",
+      "icon": "🔗",
+      "description": "最后3天订单的交货状态分布",
+      "sql": "SELECT order_brnch_descrptn as 分公司, COUNT(*) as 末3天订单数, COUNT(CASE WHEN order_dlvry_sts_code='C' THEN 1 END) as 已完成交货, COUNT(CASE WHEN order_dlvry_sts_code='B' THEN 1 END) as 部分交货, COUNT(CASE WHEN order_dlvry_sts_code='A' THEN 1 END) as 零交货, ROUND(COUNT(CASE WHEN order_dlvry_sts_code='A' THEN 1 END)*100.0/NULLIF(COUNT(*),0),1) as 零交货率_pct FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND CAST(strftime('%d', order_crt_date) AS INTEGER)>=29 GROUP BY order_brnch_descrptn ORDER BY 零交货率_pct DESC",
+      "chart_type": "bar",
+      "chart_x": "分公司",
+      "chart_y": ["已完成交货", "部分交货", "零交货"],
+      "insight_focus": "月末订单的实际交货率如何？零交货率高的分公司是否存在虚假下单？"
+    }
+  ],
+  "summary_prompt": "根据以上月末挤水分析数据（日维度节奏、分公司集中度、打款发货匹配），请以销售管理视角总结：1)月末冲量是否严重，2)哪些分公司嫌疑最大，3)建议的管控措施。不超过150字。",
+  "nav_from_graph": true,
+  "causal_graph_node": "月末挤水分析"
+}

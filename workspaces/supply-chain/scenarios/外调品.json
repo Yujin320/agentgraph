@@ -1,0 +1,93 @@
+{
+  "scenario_id": "外调品分析",
+  "title": "外调品分析",
+  "icon": "🚚",
+  "description": "川渝地区从外部工厂调入产品的总量、结构、来源与物流成本分析",
+  "page_path": "legacy/streamlit/pages/1_外调品分析.py",
+  "kpis": [
+    {
+      "label": "本月外调量（吨）",
+      "sql": "SELECT ROUND(SUM(deliv_qty_mt),1) as v FROM sales_delivery WHERE is_external_transfer=1 AND strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.1f} t",
+      "help": "当月外调品实际提货量"
+    },
+    {
+      "label": "外调占比",
+      "sql": "SELECT ROUND(100.0*SUM(CASE WHEN is_external_transfer=1 THEN deliv_qty_mt ELSE 0 END)/NULLIF(SUM(deliv_qty_mt),0),1) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "外调量占总提货量的百分比"
+    },
+    {
+      "label": "外调提单数",
+      "sql": "SELECT COUNT(DISTINCT delivnum) as v FROM sales_delivery WHERE is_external_transfer=1 AND strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.0f} 单",
+      "help": "本月外调品提单总数"
+    },
+    {
+      "label": "物流成本溢价（元/吨）",
+      "sql": "SELECT ROUND(AVG(CASE WHEN is_external_transfer=1 THEN logistics_cost_per_mt ELSE 0 END) - AVG(CASE WHEN is_external_transfer=0 THEN logistics_cost_per_mt ELSE 0 END), 1) as v FROM sales_delivery WHERE deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "+{:.1f}",
+      "help": "外调品相比本地供货每吨多出的平均物流成本"
+    }
+  ],
+  "stages": [
+    {
+      "id": "trend",
+      "title": "月度趋势",
+      "icon": "📈",
+      "description": "最近6个月外调品总量与外调占比走势",
+      "sql": "SELECT strftime('%Y-%m', deliv_crt_time) as 月份, ROUND(SUM(CASE WHEN is_external_transfer=1 THEN deliv_qty_mt ELSE 0 END),1) as 外调量_吨, ROUND(SUM(deliv_qty_mt),1) as 总量_吨, ROUND(100.0*SUM(CASE WHEN is_external_transfer=1 THEN deliv_qty_mt ELSE 0 END)/NULLIF(SUM(deliv_qty_mt),0),1) as 外调占比_pct FROM sales_delivery WHERE deliv_retrngds_identfctn IS NULL GROUP BY strftime('%Y-%m', deliv_crt_time) ORDER BY 月份 DESC LIMIT 6",
+      "chart_type": "line",
+      "chart_x": "月份",
+      "chart_y": [
+        "外调量_吨",
+        "总量_吨"
+      ],
+      "insight_focus": "外调量的月度趋势是上升还是改善？占比有无压降？"
+    },
+    {
+      "id": "product",
+      "title": "产品结构",
+      "icon": "📦",
+      "description": "外调依赖度最高的TOP10产品",
+      "sql": "SELECT deliv_mat_name as 产品, ROUND(SUM(deliv_qty_mt),1) as 外调量_吨, ROUND(100.0*SUM(deliv_qty_mt)/NULLIF((SELECT SUM(deliv_qty_mt) FROM sales_delivery WHERE is_external_transfer=1 AND deliv_retrngds_identfctn IS NULL),0),1) as 占比_pct FROM sales_delivery WHERE is_external_transfer=1 AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_mat_name ORDER BY 外调量_吨 DESC LIMIT 10",
+      "chart_type": "bar_h",
+      "chart_x": "外调量_吨",
+      "chart_y": "产品",
+      "insight_focus": "哪些产品外调依赖度最高？是否本地有生产能力？"
+    },
+    {
+      "id": "source",
+      "title": "来源工厂",
+      "icon": "🏭",
+      "description": "外调品来自哪些工厂，各自承担多少量",
+      "sql": "SELECT deliv_sply_plant_descrptn as 供货工厂, ROUND(SUM(deliv_qty_mt),1) as 外调量_吨, COUNT(DISTINCT delivnum) as 提单数 FROM sales_delivery WHERE is_external_transfer=1 AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_sply_plant_descrptn ORDER BY 外调量_吨 DESC",
+      "chart_type": "bar",
+      "chart_x": "供货工厂",
+      "chart_y": [
+        "外调量_吨"
+      ],
+      "insight_focus": "主要依赖哪些外部工厂？集中度如何？"
+    },
+    {
+      "id": "cost",
+      "title": "成本对比",
+      "icon": "💰",
+      "description": "外调品与本地供货的物流成本差异",
+      "sql": "SELECT CASE WHEN is_external_transfer=1 THEN '外调品' ELSE '本地供货' END as 来源类型, ROUND(AVG(logistics_cost_per_mt),1) as 平均物流成本_元每吨, ROUND(SUM(deliv_qty_mt),1) as 提货量_吨, COUNT(DISTINCT delivnum) as 提单数 FROM sales_delivery WHERE deliv_retrngds_identfctn IS NULL GROUP BY is_external_transfer ORDER BY is_external_transfer DESC",
+      "chart_type": "bar",
+      "chart_x": "来源类型",
+      "chart_y": [
+        "平均物流成本_元每吨"
+      ],
+      "insight_focus": "每吨物流成本差异多大？总成本溢出约为多少？"
+    }
+  ],
+  "summary_prompt": "根据以上外调品分析数据（趋势、产品结构、来源工厂、成本对比），请以供应链管理层视角总结：1)核心问题，2)关键数字，3)最优先的2个改善方向。不超过150字，语言直接。",
+  "nav_from_graph": true,
+  "causal_graph_node": "外调品分析"
+}

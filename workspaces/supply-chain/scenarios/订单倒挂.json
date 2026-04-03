@@ -1,0 +1,74 @@
+{
+  "scenario_id": "订单倒挂分析",
+  "title": "订单倒挂分析",
+  "icon": "🔄",
+  "description": "分析有订单但未完成交货的积压情况，识别倒挂集中区域与客户",
+  "kpis": [
+    {
+      "label": "未完成订单数",
+      "sql": "SELECT COUNT(*) as v FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND order_dlvry_sts_code != 'C'",
+      "value_col": "v",
+      "format": "{:.0f}",
+      "help": "本月创建且交货状态非完成的订单数"
+    },
+    {
+      "label": "未交货量（吨）",
+      "sql": "SELECT ROUND(SUM(order_qty_mt), 1) as v FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND order_dlvry_sts_code != 'C'",
+      "value_col": "v",
+      "format": "{:.1f} t",
+      "help": "未完成交货订单的总订单量"
+    },
+    {
+      "label": "倒挂率",
+      "sql": "SELECT ROUND(COUNT(CASE WHEN order_dlvry_sts_code != 'C' THEN 1 END)*100.0/NULLIF(COUNT(*),0),1) as v FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603'",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "未完成订单数占总订单数的比例"
+    },
+    {
+      "label": "零交货订单数",
+      "sql": "SELECT COUNT(*) as v FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND order_dlvry_sts_code = 'A'",
+      "value_col": "v",
+      "format": "{:.0f}",
+      "help": "交货状态为A（未开始）的订单数"
+    }
+  ],
+  "stages": [
+    {
+      "id": "product_line_hangover",
+      "title": "产线倒挂分布",
+      "icon": "🔩",
+      "description": "各产线的订单倒挂数量与未交货量",
+      "sql": "SELECT order_prodctnline_descrptn as 产线, COUNT(*) as 倒挂订单数, ROUND(SUM(order_qty_mt),1) as 未交货量_吨, ROUND(SUM(CASE WHEN order_dlvry_sts_code='A' THEN order_qty_mt ELSE 0 END),1) as 零交货量_吨, ROUND(COUNT(CASE WHEN order_dlvry_sts_code='A' THEN 1 END)*100.0/NULLIF(COUNT(*),0),1) as 零交货占比_pct FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND order_dlvry_sts_code != 'C' GROUP BY order_prodctnline_descrptn ORDER BY 未交货量_吨 DESC",
+      "chart_type": "bar",
+      "chart_x": "产线",
+      "chart_y": ["未交货量_吨", "零交货量_吨"],
+      "insight_focus": "哪条产线倒挂最严重？零交货占比是否过高？"
+    },
+    {
+      "id": "branch_backlog",
+      "title": "分公司积压",
+      "icon": "🏢",
+      "description": "各分公司未完成订单的积压情况",
+      "sql": "SELECT order_brnch_descrptn as 分公司, COUNT(*) as 倒挂订单数, ROUND(SUM(order_qty_mt),1) as 未交货量_吨, ROUND(COUNT(CASE WHEN order_dlvry_sts_code='A' THEN 1 END)*100.0/NULLIF(COUNT(*),0),1) as 零交货率_pct FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND order_dlvry_sts_code != 'C' GROUP BY order_brnch_descrptn ORDER BY 未交货量_吨 DESC",
+      "chart_type": "bar",
+      "chart_x": "分公司",
+      "chart_y": ["未交货量_吨"],
+      "insight_focus": "哪些分公司积压最多？是否与物流产能相关？"
+    },
+    {
+      "id": "customer_hangover",
+      "title": "客户维度",
+      "icon": "👤",
+      "description": "按客户分析倒挂订单分布，识别重点客户风险",
+      "sql": "SELECT order_customer_descrptn as 客户, order_brnch_descrptn as 分公司, COUNT(*) as 倒挂订单数, ROUND(SUM(order_qty_mt),1) as 未交货量_吨 FROM sales_order WHERE strftime('%Y%m', order_crt_date)='202603' AND order_dlvry_sts_code != 'C' GROUP BY order_customer_descrptn, order_brnch_descrptn ORDER BY 未交货量_吨 DESC LIMIT 20",
+      "chart_type": "bar",
+      "chart_x": "客户",
+      "chart_y": ["未交货量_吨"],
+      "insight_focus": "哪些客户倒挂量最大？是否存在大客户交付风险？"
+    }
+  ],
+  "summary_prompt": "根据以上订单倒挂分析数据（产线倒挂、分公司积压、客户维度），请以供应链管理视角总结：1)倒挂最严重的产线和分公司，2)关键风险客户，3)建议的2个优先行动项。不超过150字。",
+  "nav_from_graph": true,
+  "causal_graph_node": "订单倒挂分析"
+}

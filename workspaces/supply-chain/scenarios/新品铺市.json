@@ -1,0 +1,74 @@
+{
+  "scenario_id": "新品铺市追踪",
+  "title": "新品铺市追踪",
+  "icon": "🆕",
+  "description": "追踪新品铺市进度，分析新品覆盖率与客户活跃度",
+  "kpis": [
+    {
+      "label": "新品SKU数",
+      "sql": "SELECT COUNT(DISTINCT deliv_mat_name) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND deliv_mat_name LIKE '%新%'",
+      "value_col": "v",
+      "format": "{:.0f}",
+      "help": "本月有提货记录的新品SKU数量（产品名含'新'）"
+    },
+    {
+      "label": "新品提货量",
+      "sql": "SELECT ROUND(SUM(deliv_qty_mt),1) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND deliv_mat_name LIKE '%新%'",
+      "value_col": "v",
+      "format": "{:.1f} t",
+      "help": "新品本月总提货量"
+    },
+    {
+      "label": "新品客户数",
+      "sql": "SELECT COUNT(DISTINCT customer_code) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND deliv_mat_name LIKE '%新%'",
+      "value_col": "v",
+      "format": "{:.0f}",
+      "help": "本月提货新品的客户数"
+    },
+    {
+      "label": "铺市率",
+      "sql": "SELECT ROUND(COUNT(DISTINCT CASE WHEN deliv_mat_name LIKE '%新%' THEN customer_code END)*100.0/NULLIF(COUNT(DISTINCT customer_code),0),1) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "提货新品的客户数占本月全部活跃客户数的比例"
+    }
+  ],
+  "stages": [
+    {
+      "id": "new_product_detail",
+      "title": "新品产品明细",
+      "icon": "📋",
+      "description": "各新品SKU的提货量与客户数",
+      "sql": "SELECT deliv_mat_name as 产品, deliv_prodctnline_descrptn as 产线, ROUND(SUM(deliv_qty_mt),1) as 提货量_吨, COUNT(DISTINCT customer_code) as 客户数, COUNT(DISTINCT brnch_code) as 覆盖分公司数 FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND deliv_mat_name LIKE '%新%' GROUP BY deliv_mat_name, deliv_prodctnline_descrptn ORDER BY 提货量_吨 DESC",
+      "chart_type": "bar",
+      "chart_x": "产品",
+      "chart_y": ["提货量_吨"],
+      "insight_focus": "哪些新品提货量领先？哪些新品覆盖面更广？"
+    },
+    {
+      "id": "new_product_branch",
+      "title": "新品分公司覆盖",
+      "icon": "🏢",
+      "description": "各分公司的新品铺市情况",
+      "sql": "SELECT brnch_descrptn as 分公司, COUNT(DISTINCT CASE WHEN deliv_mat_name LIKE '%新%' THEN deliv_mat_name END) as 新品SKU数, ROUND(SUM(CASE WHEN deliv_mat_name LIKE '%新%' THEN deliv_qty_mt ELSE 0 END),1) as 新品提货量_吨, COUNT(DISTINCT CASE WHEN deliv_mat_name LIKE '%新%' THEN customer_code END) as 新品客户数, ROUND(COUNT(DISTINCT CASE WHEN deliv_mat_name LIKE '%新%' THEN customer_code END)*100.0/NULLIF(COUNT(DISTINCT customer_code),0),1) as 铺市率_pct FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL GROUP BY brnch_descrptn ORDER BY 铺市率_pct DESC",
+      "chart_type": "bar",
+      "chart_x": "分公司",
+      "chart_y": ["铺市率_pct"],
+      "insight_focus": "哪些分公司新品铺市率高？哪些分公司还需加大推广？"
+    },
+    {
+      "id": "new_product_customer",
+      "title": "新品客户活跃度",
+      "icon": "👤",
+      "description": "新品客户的提货频次与量级分布",
+      "sql": "SELECT customer_descrptn as 客户, brnch_descrptn as 分公司, COUNT(DISTINCT deliv_mat_name) as 新品SKU数, ROUND(SUM(deliv_qty_mt),1) as 新品提货量_吨, COUNT(DISTINCT delivnum) as 提货次数 FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL AND deliv_mat_name LIKE '%新%' GROUP BY customer_descrptn, brnch_descrptn ORDER BY 新品提货量_吨 DESC LIMIT 20",
+      "chart_type": "bar",
+      "chart_x": "客户",
+      "chart_y": ["新品提货量_吨"],
+      "insight_focus": "哪些客户是新品推广先锋？客户复购情况如何？"
+    }
+  ],
+  "summary_prompt": "根据以上新品铺市追踪数据（产品明细、分公司覆盖、客户活跃度），请以产品管理视角总结：1)新品整体铺市进展，2)铺市率较低的区域，3)建议的2个推广行动项。不超过150字。",
+  "nav_from_graph": true,
+  "causal_graph_node": "新品铺市追踪"
+}

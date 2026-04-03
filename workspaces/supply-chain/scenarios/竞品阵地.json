@@ -1,0 +1,74 @@
+{
+  "scenario_id": "竞品阵地防守",
+  "title": "竞品阵地防守",
+  "icon": "⚔️",
+  "description": "从客户活跃度和流失角度分析阵地防守情况，识别客户流失风险",
+  "kpis": [
+    {
+      "label": "总客户数",
+      "sql": "SELECT COUNT(DISTINCT customer_code) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) IN ('202601','202602','202603') AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.0f}",
+      "help": "近3个月有提货记录的客户总数"
+    },
+    {
+      "label": "活跃客户数",
+      "sql": "SELECT COUNT(DISTINCT customer_code) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.0f}",
+      "help": "本月有提货记录的客户数"
+    },
+    {
+      "label": "客户流失率",
+      "sql": "SELECT ROUND((COUNT(DISTINCT CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' THEN customer_code END) - COUNT(DISTINCT CASE WHEN strftime('%Y%m', deliv_crt_time)='202603' THEN customer_code END))*100.0/NULLIF(COUNT(DISTINCT CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' THEN customer_code END),0),1) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) IN ('202602','202603') AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.1f}%",
+      "help": "上月有提货、本月无提货的客户占上月客户数的比例"
+    },
+    {
+      "label": "单客户平均量",
+      "sql": "SELECT ROUND(SUM(deliv_qty_mt)/NULLIF(COUNT(DISTINCT customer_code),0),2) as v FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL",
+      "value_col": "v",
+      "format": "{:.2f} t",
+      "help": "本月活跃客户的平均提货量"
+    }
+  ],
+  "stages": [
+    {
+      "id": "branch_customer_active",
+      "title": "分公司客户活跃",
+      "icon": "🏢",
+      "description": "各分公司的客户活跃数与流失情况",
+      "sql": "SELECT brnch_descrptn as 分公司, COUNT(DISTINCT CASE WHEN strftime('%Y%m', deliv_crt_time)='202603' THEN customer_code END) as 本月活跃客户, COUNT(DISTINCT CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' THEN customer_code END) as 上月活跃客户, COUNT(DISTINCT CASE WHEN strftime('%Y%m', deliv_crt_time)='202602' AND customer_code NOT IN (SELECT DISTINCT customer_code FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL) THEN customer_code END) as 流失客户数 FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) IN ('202602','202603') AND deliv_retrngds_identfctn IS NULL GROUP BY brnch_descrptn ORDER BY 流失客户数 DESC",
+      "chart_type": "bar",
+      "chart_x": "分公司",
+      "chart_y": ["本月活跃客户", "流失客户数"],
+      "insight_focus": "哪些分公司客户流失最严重？是否需要重点防守？"
+    },
+    {
+      "id": "product_line_customer",
+      "title": "产线客户分布",
+      "icon": "🔩",
+      "description": "各产线的客户数量与提货集中度",
+      "sql": "SELECT deliv_prodctnline_descrptn as 产线, COUNT(DISTINCT customer_code) as 客户数, ROUND(SUM(deliv_qty_mt),1) as 提货量_吨, ROUND(SUM(deliv_qty_mt)/NULLIF(COUNT(DISTINCT customer_code),0),2) as 单客户均量_吨 FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL GROUP BY deliv_prodctnline_descrptn ORDER BY 客户数 DESC",
+      "chart_type": "bar",
+      "chart_x": "产线",
+      "chart_y": ["客户数"],
+      "insight_focus": "各产线客户基数如何？单客户均量是否健康？"
+    },
+    {
+      "id": "customer_tier",
+      "title": "客户量级分层",
+      "icon": "📊",
+      "description": "按提货量将客户分为大/中/小层级，分析各层级贡献",
+      "sql": "SELECT CASE WHEN qty >= 100 THEN 'A-大客户(>=100t)' WHEN qty >= 10 THEN 'B-中客户(10-100t)' ELSE 'C-小客户(<10t)' END as 客户层级, COUNT(*) as 客户数, ROUND(SUM(qty),1) as 提货量_吨, ROUND(SUM(qty)*100.0/NULLIF((SELECT SUM(deliv_qty_mt) FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL),0),1) as 占比_pct FROM (SELECT customer_code, SUM(deliv_qty_mt) as qty FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time)='202603' AND deliv_retrngds_identfctn IS NULL GROUP BY customer_code) GROUP BY 客户层级 ORDER BY 客户层级",
+      "chart_type": "bar",
+      "chart_x": "客户层级",
+      "chart_y": ["客户数", "提货量_吨"],
+      "insight_focus": "客户结构是否健康？大客户依赖度是否过高？小客户是否有增长空间？"
+    }
+  ],
+  "summary_prompt": "根据以上竞品阵地防守分析数据（分公司客户活跃、产线客户分布、客户量级分层），请以市场竞争视角总结：1)客户流失情况与风险区域，2)客户结构特点，3)建议的2个防守行动项。不超过150字。",
+  "nav_from_graph": true,
+  "causal_graph_node": "竞品阵地防守"
+}

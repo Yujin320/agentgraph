@@ -1,0 +1,20 @@
+# 供应链归因工作区配置
+# Workspace: supply-chain
+# 对应川渝大区供应链 POC 数据集（kly_poc.db）
+
+title: "川渝大区供应链归因"
+description: "川渝（西南区 YH0021）供应链多维归因分析，覆盖销量达成、订单倒挂、外调品、月末挤水等场景"
+
+# 当前报告期（YYYYMM）。SQL 生成时用此值替换"本月"/"这个月"等表述。
+current_period: "202603"
+
+# 数据库连接。路径相对于本 workspace 目录解析。
+# 此处复用 dataagent-jly 的 POC SQLite 数据库（只读）。
+database:
+  url: "sqlite:////home/ubuntu/dataagent-jly/kly_poc.db"
+
+# 可选：覆盖全局 LLM 配置（留空则使用环境变量 LLM_API_KEY / LLM_MODEL / LLM_BASE_URL）
+# llm:
+#   base_url: "https://api.moonshot.cn/v1"
+#   api_key: ""
+#   model: "kimi-k2.5"
