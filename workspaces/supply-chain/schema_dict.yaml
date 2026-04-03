@@ -208,6 +208,78 @@ tables:
         alias: "大区名称"
         type: string
 
+  production_output:
+    alias: "生产产出表"
+    description: "记录每个工厂每条产线每批次的计划产量与实际产量，用于生产达成率分析"
+    primary_key: "production_id"
+    row_granularity: "每行 = 一个工厂+产线+批次的生产记录"
+    fields:
+      production_id:
+        alias: "生产记录ID"
+        type: string
+      record_yearmth:
+        alias: "生产年月"
+        type: string
+        description: "生产记录所属年月，格式 YYYYMM，直接用于月份过滤：WHERE record_yearmth = '202603'"
+      plant_code:
+        alias: "工厂编码"
+        type: string
+      plant_descrptn:
+        alias: "工厂名称"
+        type: string
+      planned_qty_mt:
+        alias: "计划产量（吨）"
+        type: float
+        description: "当批次的计划生产量，单位：吨"
+      actual_qty_mt:
+        alias: "实际产量（吨）"
+        type: float
+        description: "当批次的实际生产量，单位：吨"
+      yield_rate:
+        alias: "良品率"
+        type: float
+        description: "合格品占总产出的比例，0~1之间"
+
+  inventory:
+    alias: "库存快照表"
+    description: "记录每个工厂每种物料在月末的库存状态，用于库存告急分析"
+    primary_key: "inventory_id"
+    row_granularity: "每行 = 一个工厂+物料的月度库存快照"
+    fields:
+      inventory_id:
+        alias: "库存记录ID"
+        type: string
+      snapshot_yearmth:
+        alias: "快照年月"
+        type: string
+        description: "库存快照所属年月，格式 YYYYMM，直接用于月份过滤：WHERE snapshot_yearmth = '202603'"
+      plant_code:
+        alias: "工厂编码"
+        type: string
+      mat_code:
+        alias: "物料编码"
+        type: string
+      mat_name:
+        alias: "物料名称"
+        type: string
+      stock_qty_mt:
+        alias: "库存量（吨）"
+        type: float
+        description: "当前实际库存量，单位：吨"
+      safety_stock_mt:
+        alias: "安全库存（吨）"
+        type: float
+        description: "该物料的安全库存水位，低于此值视为库存告急"
+      days_of_supply:
+        alias: "可供天数"
+        type: float
+        description: "按当前库存量估算可支撑的销售天数"
+      stock_status:
+        alias: "库存状态"
+        type: string
+        description: "库存状态标签"
+        values: {"normal": "正常", "low": "偏低", "critical": "告急", "overstock": "积压"}
+
 # ─────────────────────────────────────────
 # 表关联关系
 # ─────────────────────────────────────────
