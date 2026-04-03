@@ -1,0 +1,247 @@
+/* ── DataAgent v2 — Global Styles ─────────────────────────────────────────── */
+
+/* ── Theme Transitions ────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+/* Exclude fast-moving animations from transition */
+input, textarea, .ant-input, .ant-btn, [class*="ant-menu"] {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.2s ease;
+}
+
+/* ── Background Texture ───────────────────────────────────────────────────── */
+[data-theme="light"] body {
+  background: var(--da-bg-base);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(67,56,202,0.03) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(217,119,6,0.02) 0%, transparent 50%);
+}
+
+[data-theme="dark"] body {
+  background: var(--da-bg-base);
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(245,158,11,0.03) 0%, transparent 50%);
+}
+
+/* ── Typography ───────────────────────────────────────────────────────────── */
+body {
+  font-family: 'DM Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--da-text-primary);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, .da-heading {
+  font-family: 'Instrument Serif', 'Noto Serif SC', Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+code, pre, .da-mono, .ant-typography code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+/* ── Selection ────────────────────────────────────────────────────────────── */
+[data-theme="light"] ::selection {
+  background: rgba(67,56,202,0.15);
+  color: #1e1b4b;
+}
+[data-theme="dark"] ::selection {
+  background: rgba(99,102,241,0.3);
+  color: #f1f5f9;
+}
+
+/* ── Custom Scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.12);
+  border-radius: 3px;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.2);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes da-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes da-fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes da-slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes da-scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes da-pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0.2); }
+  50%      { box-shadow: 0 0 12px 4px rgba(99,102,241,0.15); }
+}
+
+@keyframes da-gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes da-typing-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.da-animate-in {
+  animation: da-fade-in 0.4s ease-out both;
+}
+.da-animate-in-1 { animation: da-fade-in-up 0.5s ease-out 0.1s both; }
+.da-animate-in-2 { animation: da-fade-in-up 0.5s ease-out 0.2s both; }
+.da-animate-in-3 { animation: da-fade-in-up 0.5s ease-out 0.3s both; }
+.da-animate-in-4 { animation: da-fade-in-up 0.5s ease-out 0.4s both; }
+.da-animate-in-5 { animation: da-fade-in-up 0.5s ease-out 0.5s both; }
+
+/* ── Card Hover Effects ───────────────────────────────────────────────────── */
+.da-card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.da-card-hover:hover {
+  transform: translateY(-2px);
+}
+[data-theme="light"] .da-card-hover:hover {
+  box-shadow: 0 8px 24px rgba(67,56,202,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  border-color: rgba(67,56,202,0.2);
+}
+[data-theme="dark"] .da-card-hover:hover {
+  box-shadow: 0 8px 24px rgba(99,102,241,0.12), 0 2px 6px rgba(0,0,0,0.2);
+  border-color: rgba(99,102,241,0.2);
+}
+
+/* ── Glass Card ───────────────────────────────────────────────────────────── */
+.da-glass {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ── Sidebar Nav Active Glow ──────────────────────────────────────────────── */
+.da-nav-active {
+  position: relative;
+}
+.da-nav-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--da-primary);
+  box-shadow: 0 0 8px var(--da-primary);
+}
+
+/* ── Theme Toggle Button ──────────────────────────────────────────────────── */
+.da-theme-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--da-border-base);
+  background: var(--da-bg-muted);
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--da-text-secondary);
+  transition: all 0.2s ease;
+}
+.da-theme-toggle:hover {
+  background: var(--da-primary-subtle);
+  color: var(--da-primary);
+  border-color: var(--da-primary);
+}
+
+/* ── Hero gradient mesh animation ─────────────────────────────────────────── */
+.da-hero-gradient {
+  background-size: 200% 200%;
+  animation: da-gradient-shift 8s ease infinite;
+}
+
+/* ── Typing cursor ────────────────────────────────────────────────────────── */
+.typing-cursor {
+  animation: da-typing-blink 0.8s step-end infinite;
+  color: var(--da-primary);
+  font-weight: 600;
+}
+
+/* ── Streaming text markdown ──────────────────────────────────────────────── */
+.streaming-text p {
+  margin: 0.4em 0;
+  line-height: 1.7;
+}
+.streaming-text p:first-child {
+  margin-top: 0;
+}
+.streaming-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Page transition ──────────────────────────────────────────────────────── */
+.da-page-enter {
+  animation: da-scale-in 0.3s ease-out both;
+}
+
+/* ── AntD overrides for dark mode ─────────────────────────────────────────── */
+[data-theme="dark"] .ant-card {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.08);
+}
+
+[data-theme="dark"] .ant-table-thead > tr > th,
+[data-theme="dark"] .ant-table-thead > tr > td {
+  background: rgba(255,255,255,0.04) !important;
+}
+
+[data-theme="dark"] .ant-table-row:nth-child(even) > td {
+  background: rgba(255,255,255,0.02);
+}
+
+[data-theme="dark"] .ant-collapse-header {
+  color: var(--da-text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-empty-description {
+  color: var(--da-text-muted);
+}
+
+/* ── AntD overrides for light mode tables ─────────────────────────────────── */
+[data-theme="light"] .ant-table-thead > tr > th,
+[data-theme="light"] .ant-table-thead > tr > td {
+  background: linear-gradient(180deg, #fafaf8 0%, #f5f3f0 100%) !important;
+}
+
+[data-theme="light"] .ant-table-row:nth-child(even) > td {
+  background: #fafaf8;
+}

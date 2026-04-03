@@ -358,8 +358,8 @@ const Chat: React.FC = () => {
       let pendingSql: string | undefined;
 
       const cancel = fetchSSE(
-        '/chat',
-        { question: question.trim(), workspace, session_id: sessionId.current },
+        `/workspaces/${workspace}/chat`,
+        { question: question.trim(), session_id: sessionId.current },
         (event: SSEEvent) => {
           const type = event.type as string;
 
@@ -474,6 +474,13 @@ const Chat: React.FC = () => {
           style={{ color: '#4f46e5' }}
         >
           数据探索
+        </Button>
+        <Button
+          type="link"
+          onClick={() => navigate(`/w/${workspace}/kg`)}
+          style={{ color: '#4f46e5' }}
+        >
+          知识图谱
         </Button>
       </Header>
 

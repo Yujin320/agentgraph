@@ -1,0 +1,36 @@
+# Frontend build artifacts (rebuilt inside Docker)
+frontend/node_modules
+frontend/dist
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Git history
+.git
+.gitignore
+
+# Environment secrets (passed via env_file in docker-compose)
+.env
+
+# Python packaging artifacts
+*.egg-info
+dist/
+build/
+
+# Virtual environments
+.venv
+venv
+env
+
+# Workspace runtime data (mounted as volume)
+workspaces/
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode
+*.swp
+*.swo

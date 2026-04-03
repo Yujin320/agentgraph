@@ -53,7 +53,7 @@ const WorkspaceCreate: React.FC = () => {
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <DatabaseOutlined style={{ fontSize: 24, color: '#4f46e5' }} />
+          <DatabaseOutlined style={{ fontSize: 24, color: 'var(--da-primary, #4338ca)' }} />
           <Title level={3} style={{ margin: 0 }}>
             创建新工作空间
           </Title>
@@ -112,7 +112,7 @@ const WorkspaceCreate: React.FC = () => {
               loading={loading}
               size="large"
               block
-              style={{ background: '#4f46e5', borderColor: '#4f46e5' }}
+              style={{ background: 'var(--da-primary, #4338ca)', borderColor: 'var(--da-primary, #4338ca)' }}
             >
               创建并开始配置
             </Button>

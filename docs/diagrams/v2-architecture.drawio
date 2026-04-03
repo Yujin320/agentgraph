@@ -1,0 +1,187 @@
+<mxGraphModel>
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+
+    <!-- Title -->
+    <mxCell id="title" value="DataAgent v2 - 系统分层架构" style="text;fontSize=20;fontStyle=1;fontColor=#1a1a2e;align=center;" vertex="1" parent="1">
+      <mxGeometry x="200" y="10" width="560" height="30" as="geometry"/>
+    </mxCell>
+
+    <!-- Layer 1: Presentation Layer -->
+    <mxCell id="layer1_bg" value="" style="rounded=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;opacity=40;" vertex="1" parent="1">
+      <mxGeometry x="40" y="50" width="880" height="130" as="geometry"/>
+    </mxCell>
+    <mxCell id="layer1_label" value="展示层 Presentation" style="text;fontSize=14;fontStyle=1;fontColor=#E65100;align=left;" vertex="1" parent="1">
+      <mxGeometry x="55" y="55" width="200" height="25" as="geometry"/>
+    </mxCell>
+    <mxCell id="p1" value="实时推理流展示&#xa;(SSE Named Events)" style="rounded=1;whiteSpace=wrap;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="60" y="90" width="150" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="p2" value="归因路径&#xa;交互式 DAG" style="rounded=1;whiteSpace=wrap;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="230" y="90" width="130" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="p3" value="内联 SQL 编辑器&#xa;(Approve / Edit)" style="rounded=1;whiteSpace=wrap;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="380" y="90" width="140" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="p4" value="自动图表选择器&#xa;(ECharts)" style="rounded=1;whiteSpace=wrap;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="540" y="90" width="130" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="p5" value="策略选择器&#xa;+ 场景 KPI" style="rounded=1;whiteSpace=wrap;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="690" y="90" width="120" height="60" as="geometry"/>
+    </mxCell>
+
+    <!-- Arrow: Presentation -> Reasoning -->
+    <mxCell id="arrow_pr" value="SSE + REST + interrupt()" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#555;fontSize=10;fontColor=#555;" edge="1" parent="1" source="layer1_bg" target="layer2_bg">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Layer 2: Reasoning Engine Layer -->
+    <mxCell id="layer2_bg" value="" style="rounded=1;fillColor=#E8EAF6;strokeColor=#283593;strokeWidth=2;opacity=40;" vertex="1" parent="1">
+      <mxGeometry x="40" y="220" width="880" height="200" as="geometry"/>
+    </mxCell>
+    <mxCell id="layer2_label" value="推理引擎层 Reasoning Engine (LangGraph)" style="text;fontSize=14;fontStyle=1;fontColor=#283593;align=left;" vertex="1" parent="1">
+      <mxGeometry x="55" y="225" width="400" height="25" as="geometry"/>
+    </mxCell>
+
+    <!-- Main Loop Nodes -->
+    <mxCell id="n_intent" value="Intent&#xa;意图识别" style="rounded=1;whiteSpace=wrap;fillColor=#C5CAE9;strokeColor=#283593;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="60" y="265" width="90" height="50" as="geometry"/>
+    </mxCell>
+    <mxCell id="n_plan" value="Plan&#xa;任务分解" style="rounded=1;whiteSpace=wrap;fillColor=#C5CAE9;strokeColor=#283593;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="175" y="265" width="90" height="50" as="geometry"/>
+    </mxCell>
+    <mxCell id="n_sqlgen" value="SQL Gen&#xa;SQL 生成" style="rounded=1;whiteSpace=wrap;fillColor=#C5CAE9;strokeColor=#283593;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="290" y="265" width="90" height="50" as="geometry"/>
+    </mxCell>
+    <mxCell id="n_exec" value="Execute&#xa;SQL 执行" style="rounded=1;whiteSpace=wrap;fillColor=#C5CAE9;strokeColor=#283593;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="405" y="265" width="90" height="50" as="geometry"/>
+    </mxCell>
+    <mxCell id="n_reflect" value="Reflect&#xa;结果评估" style="rhombus;whiteSpace=wrap;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="520" y="255" width="100" height="70" as="geometry"/>
+    </mxCell>
+    <mxCell id="n_conclude" value="Conclude&#xa;生成结论" style="rounded=1;whiteSpace=wrap;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="660" y="265" width="100" height="50" as="geometry"/>
+    </mxCell>
+
+    <!-- Main flow edges -->
+    <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#283593;" edge="1" parent="1" source="n_intent" target="n_plan">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#283593;" edge="1" parent="1" source="n_plan" target="n_sqlgen">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#283593;" edge="1" parent="1" source="n_sqlgen" target="n_exec">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#283593;" edge="1" parent="1" source="n_exec" target="n_reflect">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="e5" value="OK" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#2E7D32;fontColor=#2E7D32;fontSize=10;" edge="1" parent="1" source="n_reflect" target="n_conclude">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Retry loop -->
+    <mxCell id="e_retry" value="SQL Error&#xa;(retry &lt; 3)" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#C62828;fontColor=#C62828;fontSize=10;dashed=1;curved=1;" edge="1" parent="1" source="n_reflect" target="n_sqlgen">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="570" y="345"/>
+          <mxPoint x="335" y="345"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+    <!-- Human interrupt marker -->
+    <mxCell id="interrupt_marker" value="interrupt()&#xa;Human-in-the-Loop" style="shape=mxgraph.flowchart.annotation_1;whiteSpace=wrap;fillColor=none;strokeColor=#E65100;fontSize=9;fontColor=#E65100;align=left;" vertex="1" parent="1">
+      <mxGeometry x="290" y="320" width="110" height="35" as="geometry"/>
+    </mxCell>
+
+    <!-- Strategy sub-graphs -->
+    <mxCell id="strat_box" value="" style="rounded=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;strokeWidth=1;dashed=1;" vertex="1" parent="1">
+      <mxGeometry x="60" y="370" width="850" height="40" as="geometry"/>
+    </mxCell>
+    <mxCell id="strat_label" value="Strategy Sub-graphs:" style="text;fontSize=10;fontStyle=1;fontColor=#6A1B9A;" vertex="1" parent="1">
+      <mxGeometry x="65" y="375" width="130" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="s1" value="因果归因" style="rounded=1;fillColor=#CE93D8;strokeColor=#6A1B9A;fontSize=10;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="200" y="374" width="80" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="s2" value="统计分析" style="rounded=1;fillColor=#CE93D8;strokeColor=#6A1B9A;fontSize=10;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="295" y="374" width="80" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="s3" value="对比分析" style="rounded=1;fillColor=#CE93D8;strokeColor=#6A1B9A;fontSize=10;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="390" y="374" width="80" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="s4" value="趋势追踪" style="rounded=1;fillColor=#CE93D8;strokeColor=#6A1B9A;fontSize=10;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="485" y="374" width="80" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="s5" value="What-if" style="rounded=1;fillColor=#CE93D8;strokeColor=#6A1B9A;fontSize=10;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="580" y="374" width="80" height="30" as="geometry"/>
+    </mxCell>
+    <mxCell id="s6" value="..." style="rounded=1;fillColor=#CE93D8;strokeColor=#6A1B9A;fontSize=10;whiteSpace=wrap;" vertex="1" parent="1">
+      <mxGeometry x="675" y="374" width="50" height="30" as="geometry"/>
+    </mxCell>
+
+    <!-- Arrow: Reasoning -> Knowledge -->
+    <mxCell id="arrow_rk" value="KG 查询 / RAG 检索" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#555;fontSize=10;fontColor=#555;" edge="1" parent="1" source="layer2_bg" target="layer3_bg">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Layer 3: Knowledge Layer -->
+    <mxCell id="layer3_bg" value="" style="rounded=1;fillColor=#E8F5E9;strokeColor=#1B5E20;strokeWidth=2;opacity=40;" vertex="1" parent="1">
+      <mxGeometry x="40" y="460" width="880" height="110" as="geometry"/>
+    </mxCell>
+    <mxCell id="layer3_label" value="知识层 Knowledge" style="text;fontSize=14;fontStyle=1;fontColor=#1B5E20;align=left;" vertex="1" parent="1">
+      <mxGeometry x="55" y="465" width="200" height="25" as="geometry"/>
+    </mxCell>
+    <mxCell id="k1" value="Neo4j&#xa;因果 KG" style="shape=cylinder3;whiteSpace=wrap;fillColor=#A5D6A7;strokeColor=#1B5E20;fontSize=11;fontStyle=1;size=10;" vertex="1" parent="1">
+      <mxGeometry x="80" y="495" width="100" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="k2" value="ChromaDB&#xa;Few-shot RAG" style="shape=cylinder3;whiteSpace=wrap;fillColor=#A5D6A7;strokeColor=#1B5E20;fontSize=11;fontStyle=1;size=10;" vertex="1" parent="1">
+      <mxGeometry x="230" y="495" width="120" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="k3" value="Schema Dict&#xa;语义字典" style="rounded=1;whiteSpace=wrap;fillColor=#C8E6C9;strokeColor=#1B5E20;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="400" y="500" width="110" height="45" as="geometry"/>
+    </mxCell>
+    <mxCell id="k4" value="Feedback Loop&#xa;反馈进化" style="rounded=1;whiteSpace=wrap;fillColor=#C8E6C9;strokeColor=#1B5E20;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="560" y="500" width="110" height="45" as="geometry"/>
+    </mxCell>
+    <mxCell id="k5" value="Scenario&#xa;场景配置" style="rounded=1;whiteSpace=wrap;fillColor=#C8E6C9;strokeColor=#1B5E20;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="720" y="500" width="100" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- Arrow: Knowledge -> Data -->
+    <mxCell id="arrow_kd" value="SQL 查询 / 数据读取" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#555;fontSize=10;fontColor=#555;" edge="1" parent="1" source="layer3_bg" target="layer4_bg">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Layer 4: Data Layer -->
+    <mxCell id="layer4_bg" value="" style="rounded=1;fillColor=#E3F2FD;strokeColor=#0D47A1;strokeWidth=2;opacity=40;" vertex="1" parent="1">
+      <mxGeometry x="40" y="610" width="880" height="110" as="geometry"/>
+    </mxCell>
+    <mxCell id="layer4_label" value="数据层 Data (SQLAlchemy + Vanna.ai + Adapters)" style="text;fontSize=14;fontStyle=1;fontColor=#0D47A1;align=left;" vertex="1" parent="1">
+      <mxGeometry x="55" y="615" width="450" height="25" as="geometry"/>
+    </mxCell>
+    <mxCell id="d1" value="SQLAlchemy&#xa;SQL/PG/MySQL" style="shape=cylinder3;whiteSpace=wrap;fillColor=#90CAF9;strokeColor=#0D47A1;fontSize=11;fontStyle=1;size=10;" vertex="1" parent="1">
+      <mxGeometry x="80" y="645" width="120" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="d2" value="CSV / Excel&#xa;(pandas)" style="rounded=1;whiteSpace=wrap;fillColor=#BBDEFB;strokeColor=#0D47A1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="240" y="650" width="110" height="45" as="geometry"/>
+    </mxCell>
+    <mxCell id="d3" value="REST API&#xa;(httpx)" style="rounded=1;whiteSpace=wrap;fillColor=#BBDEFB;strokeColor=#0D47A1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="390" y="650" width="100" height="45" as="geometry"/>
+    </mxCell>
+    <mxCell id="d4" value="Document&#xa;(docling)" style="rounded=1;whiteSpace=wrap;fillColor=#BBDEFB;strokeColor=#0D47A1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="530" y="650" width="100" height="45" as="geometry"/>
+    </mxCell>
+    <mxCell id="d5" value="Vanna.ai&#xa;Text-to-SQL RAG" style="rounded=1;whiteSpace=wrap;fillColor=#BBDEFB;strokeColor=#0D47A1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="670" y="650" width="130" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- Pluggable indicator -->
+    <mxCell id="plug_label" value="DataSourceAdapter 插件接口&#xa;(可扩展)" style="text;fontSize=10;fontStyle=2;fontColor=#0D47A1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="280" y="700" width="200" height="25" as="geometry"/>
+    </mxCell>
+
+  </root>
+</mxGraphModel>

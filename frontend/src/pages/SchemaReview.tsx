@@ -233,7 +233,7 @@ const SchemaReview: React.FC = () => {
               size="large"
               loading={saving}
               onClick={handleSave}
-              style={{ background: '#4f46e5', borderColor: '#4f46e5' }}
+              style={{ background: 'var(--da-primary, #4338ca)', borderColor: 'var(--da-primary, #4338ca)' }}
             >
               保存并继续
             </Button>

@@ -10,6 +10,8 @@ import {
   Space,
   Tag,
   message,
+  Progress,
+  Tooltip,
 } from 'antd';
 import {
   CheckCircleOutlined,
@@ -18,6 +20,11 @@ import {
   ClockCircleOutlined,
   EyeOutlined,
   ForwardOutlined,
+  DatabaseOutlined,
+  SearchOutlined,
+  FileSearchOutlined,
+  ApartmentOutlined,
+  BranchesOutlined,
 } from '@ant-design/icons';
 import { pipelineApi } from '../api/client';
 
@@ -30,6 +37,33 @@ const STAGE_LABELS: Record<string, string> = {
   enrich: '语义标注',
   knowledge: '知识图谱',
   train: 'SQL 训练',
+};
+
+// Stage descriptions
+const STAGE_DESCRIPTIONS: Record<string, string> = {
+  connect: '验证数据库连接，统计表和行数',
+  discover: '自动发现 Schema 结构，推断外键关系和字段角色',
+  enrich: 'LLM 标注中文别名和业务描述（需人工审核）',
+  knowledge: '构建因果知识图谱，写入 Neo4j',
+  train: '自动生成问答对，建立向量索引',
+};
+
+// Stage estimated times
+const STAGE_EST_TIME: Record<string, string> = {
+  connect: '约 5 秒',
+  discover: '约 10–30 秒',
+  enrich: '约 1–3 分钟（LLM 调用）',
+  knowledge: '约 30 秒–2 分钟',
+  train: '约 1–5 分钟',
+};
+
+// Stage icons
+const STAGE_ICONS: Record<string, React.ReactNode> = {
+  connect: <DatabaseOutlined />,
+  discover: <SearchOutlined />,
+  enrich: <FileSearchOutlined />,
+  knowledge: <ApartmentOutlined />,
+  train: <BranchesOutlined />,
 };
 
 type StageStatus = 'pending' | 'running' | 'completed' | 'needs_review' | 'failed' | 'skipped';
@@ -189,15 +223,31 @@ const PipelineSetup: React.FC = () => {
   const allDone = stages.length > 0 && stages.every((s) => ['completed', 'skipped'].includes(s.status));
   const hasNeedsReview = stages.some((s) => s.status === 'needs_review');
 
+  // Overall progress percentage
+  const completedCount = stages.filter((s) => ['completed', 'skipped'].includes(s.status)).length;
+  const overallPct = stages.length > 0 ? Math.round((completedCount / stages.length) * 100) : 0;
+
+  // Stage border color helper
+  const stageBorderColor = (status: StageStatus) => {
+    switch (status) {
+      case 'completed':
+      case 'skipped': return '#52c41a';
+      case 'failed': return '#ff4d4f';
+      case 'running': return 'var(--da-primary, #4338ca)';
+      case 'needs_review': return '#faad14';
+      default: return '#d9d9d9';
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', background: '#f0f2f5', padding: '48px 24px' }}>
-      <div style={{ maxWidth: 780, margin: '0 auto' }}>
+      <div style={{ maxWidth: 820, margin: '0 auto' }}>
         {/* Header */}
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 28 }}>
           <Title level={2} style={{ margin: 0 }}>
             知识库构建流程
           </Title>
-          <Paragraph style={{ color: '#888', marginTop: 4 }}>
+          <Paragraph style={{ color: '#888', marginTop: 4, marginBottom: 0 }}>
             工作空间：<Text strong>{ws}</Text>
           </Paragraph>
         </div>
@@ -210,11 +260,31 @@ const PipelineSetup: React.FC = () => {
             showIcon
             style={{ marginBottom: 24 }}
             action={
-              <Button type="primary" onClick={() => navigate(`/w/${ws}`)} style={{ background: '#4f46e5', borderColor: '#4f46e5' }}>
+              <Button type="primary" onClick={() => navigate(`/w/${ws}`)} style={{ background: 'var(--da-primary, #4338ca)', borderColor: 'var(--da-primary, #4338ca)' }}>
                 开始分析
               </Button>
             }
           />
+        )}
+
+        {/* Overall progress */}
+        {stages.length > 0 && (
+          <Card style={{ borderRadius: 12, marginBottom: 24 }} styles={{ body: { padding: '16px 24px' } }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text strong style={{ fontSize: 14 }}>
+                整体进度
+              </Text>
+              <Text style={{ fontSize: 13, color: overallPct === 100 ? '#52c41a' : 'var(--da-primary, #4338ca)' }}>
+                {completedCount} / {stages.length} 阶段完成
+              </Text>
+            </div>
+            <Progress
+              percent={overallPct}
+              strokeColor={overallPct === 100 ? '#52c41a' : 'var(--da-primary, #4338ca)'}
+              size={['100%', 8]}
+              showInfo={false}
+            />
+          </Card>
         )}
 
         {/* Steps overview */}
@@ -246,29 +316,53 @@ const PipelineSetup: React.FC = () => {
               key={stage.name}
               style={{
                 borderRadius: 10,
-                borderLeft: `4px solid ${
-                  stage.status === 'completed' || stage.status === 'skipped'
-                    ? '#52c41a'
-                    : stage.status === 'failed'
-                    ? '#ff4d4f'
-                    : stage.status === 'running'
-                    ? '#1677ff'
-                    : stage.status === 'needs_review'
-                    ? '#faad14'
-                    : '#d9d9d9'
-                }`,
+                borderLeft: `4px solid ${stageBorderColor(stage.status)}`,
               }}
               styles={{ body: { padding: '16px 20px' } }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Space>
-                  <Text strong style={{ fontSize: 15 }}>
-                    {STAGE_LABELS[stage.name] ?? stage.name}
-                  </Text>
-                  <StageStatusTag status={stage.status} />
+              {/* Title row */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Space align="start">
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 8,
+                    background: stage.status === 'completed' || stage.status === 'skipped' ? '#f0fff4'
+                      : stage.status === 'running' ? '#eef2ff'
+                      : stage.status === 'failed' ? '#fff1f0'
+                      : '#fafafa',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: stageBorderColor(stage.status), fontSize: 16, flexShrink: 0,
+                  }}>
+                    {STAGE_ICONS[stage.name] ?? <ClockCircleOutlined />}
+                  </div>
+                  <div>
+                    <Space align="center">
+                      <Text strong style={{ fontSize: 15 }}>
+                        {STAGE_LABELS[stage.name] ?? stage.name}
+                      </Text>
+                      <StageStatusTag status={stage.status} />
+                    </Space>
+                    <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 2 }}>
+                      {STAGE_DESCRIPTIONS[stage.name] ?? ''}
+                    </Text>
+                  </div>
                 </Space>
 
                 <Space>
+                  {/* Est. time for pending stages */}
+                  {(stage.status === 'pending') && STAGE_EST_TIME[stage.name] && (
+                    <Tooltip title="预计耗时（取决于数据量和网络）">
+                      <Tag color="default" style={{ fontSize: 11 }}>
+                        <ClockCircleOutlined style={{ marginRight: 3 }} />
+                        {STAGE_EST_TIME[stage.name]}
+                      </Tag>
+                    </Tooltip>
+                  )}
+                  {stage.status === 'running' && (
+                    <Tag color="processing" style={{ fontSize: 11 }}>
+                      <LoadingOutlined style={{ marginRight: 3 }} />
+                      运行中...
+                    </Tag>
+                  )}
                   {stage.status === 'failed' && (
                     <Button size="small" danger onClick={() => handleRetry(stage.name)}>
                       重试
@@ -297,6 +391,7 @@ const PipelineSetup: React.FC = () => {
                 </Space>
               </div>
 
+              {/* Error display */}
               {stage.status === 'failed' && stage.error && (
                 <Alert
                   type="error"
@@ -305,10 +400,29 @@ const PipelineSetup: React.FC = () => {
                 />
               )}
 
+              {/* Completion info */}
               {(stage.status === 'completed' || stage.status === 'skipped') && stage.updated_at && (
-                <Text style={{ color: '#aaa', fontSize: 12, marginTop: 6, display: 'block' }}>
-                  完成时间：{new Date(stage.updated_at).toLocaleString('zh-CN')}
-                </Text>
+                <div style={{ marginTop: 8, display: 'flex', gap: 16, alignItems: 'center' }}>
+                  <Text style={{ color: '#aaa', fontSize: 12 }}>
+                    完成时间：{new Date(stage.updated_at).toLocaleString('zh-CN')}
+                  </Text>
+                  {stage.status === 'skipped' && (
+                    <Tag color="default" style={{ fontSize: 11 }}>已跳过</Tag>
+                  )}
+                </div>
+              )}
+
+              {/* Running indicator */}
+              {stage.status === 'running' && (
+                <div style={{ marginTop: 10 }}>
+                  <Progress
+                    percent={100}
+                    status="active"
+                    showInfo={false}
+                    strokeColor="var(--da-primary, #4338ca)"
+                    size={['100%', 4]}
+                  />
+                </div>
               )}
             </Card>
           ))}
@@ -323,10 +437,15 @@ const PipelineSetup: React.FC = () => {
               loading={runningNext || isRunning}
               disabled={!hasPending || isRunning}
               onClick={handleRunNext}
-              style={{ background: '#4f46e5', borderColor: '#4f46e5', minWidth: 160 }}
+              style={{ background: 'var(--da-primary, #4338ca)', borderColor: 'var(--da-primary, #4338ca)', minWidth: 180, height: 44 }}
             >
               {isRunning ? '执行中…' : '执行下一步'}
             </Button>
+            {hasPending && !isRunning && (
+              <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+                下一步：{STAGE_LABELS[stages.find(s => s.status === 'pending')?.name ?? ''] ?? ''} — {STAGE_EST_TIME[stages.find(s => s.status === 'pending')?.name ?? ''] ?? ''}
+              </Text>
+            )}
           </div>
         )}
       </div>

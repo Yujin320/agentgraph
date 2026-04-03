@@ -1,0 +1,119 @@
+{
+  "status": "success",
+  "data": {
+    "question": "面粉卡在哪几个品？谁接的单？",
+    "sql": "SELECT\n  order_mat_name AS material,\n  order_prodctnline_descrptn AS product_line,\n  brnch_descrptn AS branch,\n  ROUND(SUM(order_qty_mt), 2) AS backlog_qty_mt,\n  COUNT(*) AS order_count\nFROM sales_order\nWHERE strftime('%Y%m', order_crt_date) = '202603'\n  AND order_dlvry_sts_code != 'C'\n  AND order_mat_name LIKE '%面粉%'\nGROUP BY order_mat_name, order_prodctnline_descrptn, brnch_descrptn\nORDER BY backlog_qty_mt DESC;",
+    "result": {
+      "columns": [
+        "material",
+        "product_line",
+        "branch",
+        "backlog_qty_mt",
+        "order_count"
+      ],
+      "rows": [
+        [
+          "中筋面粉50kg",
+          "面粉－散装",
+          "营销-重庆分公司",
+          346.73,
+          11
+        ],
+        [
+          "中筋面粉50kg",
+          "面粉－散装",
+          "营销-宜宾分公司",
+          254.12,
+          7
+        ],
+        [
+          "中筋面粉50kg",
+          "面粉－散装",
+          "营销-成都分公司",
+          213.23,
+          8
+        ],
+        [
+          "特供高筋面粉25kg",
+          "面粉－包装",
+          "营销-重庆分公司",
+          166.56,
+          12
+        ],
+        [
+          "特供高筋面粉25kg",
+          "面粉－包装",
+          "营销-绵阳分公司",
+          102.35,
+          8
+        ],
+        [
+          "中筋面粉50kg",
+          "面粉－散装",
+          "营销-绵阳分公司",
+          82.21,
+          3
+        ],
+        [
+          "中筋面粉50kg",
+          "面粉－散装",
+          "营销-南充分公司",
+          64.19,
+          3
+        ],
+        [
+          "中筋面粉50kg",
+          "面粉－散装",
+          "营销-泸州分公司",
+          63.18,
+          2
+        ],
+        [
+          "特供高筋面粉25kg",
+          "面粉－包装",
+          "营销-成都分公司",
+          57.03,
+          8
+        ],
+        [
+          "特供高筋面粉25kg",
+          "面粉－包装",
+          "营销-达州分公司",
+          50.79,
+          4
+        ],
+        [
+          "特供高筋面粉25kg",
+          "面粉－包装",
+          "营销-南充分公司",
+          50.61,
+          6
+        ],
+        [
+          "特供高筋面粉25kg",
+          "面粉－包装",
+          "营销-宜宾分公司",
+          37.05,
+          2
+        ],
+        [
+          "特供高筋面粉25kg",
+          "面粉－包装",
+          "营销-泸州分公司",
+          17.99,
+          1
+        ]
+      ],
+      "row_count": 13
+    },
+    "interpretation": "**业务解读：**\n\n当前面粉积压主要集中在**中筋面粉（散装）**与**特供高筋面粉（包装）**。\n\n**异常点：**\n1. **重庆分公司**积压最严重，两类产品合计积压超500吨，且订单密度高，存在交付瓶颈。\n2. **中筋面粉（散装）**在重庆、宜宾、成都三地积压占比过高，需排查产能分配或物流配送是否受限。\n\n**建议：**\n1. **优先保供：** 针对重庆分公司的高频订单，核实库存水位，必要时调配周边分公司产能支援。\n2. **物流预警：** 重点关注散装面粉的物流运力，避免因车辆调度导致积压进一步扩大。",
+    "kg_context": {
+      "matched_metrics": [],
+      "matched_dimensions": [],
+      "matched_scenario": null
+    }
+  },
+  "artifacts": [],
+  "message": "SQL执行成功: 13 行结果",
+  "errors": []
+}

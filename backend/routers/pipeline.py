@@ -14,9 +14,13 @@ GET  /api/pipeline/stages                         — List all registered stages
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Optional
+import json
+import time
+import uuid
+from typing import Any, AsyncGenerator, Optional
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 # Ensure all stages are registered
@@ -25,6 +29,7 @@ import core.stages  # noqa: F401
 from core.pipeline import PipelineOrchestrator
 from core.stage import StageRegistry
 from knowledge.workspace import Workspace
+from backend.query_log import add_log
 
 router = APIRouter(tags=["pipeline"])
 
@@ -184,3 +189,201 @@ def skip_stage(ws: str, stage: str):
 def list_stages():
     """List all registered pipeline stages with metadata."""
     return PipelineOrchestrator.list_stages()
+
+
+# ── Knowledge Graph ───────────────────────────────────────────────────────────
+
+@router.get("/workspaces/{ws}/kg")
+def get_kg(ws: str):
+    """Return KG nodes and edges for a workspace from Neo4j."""
+    _get_ws_or_404(ws)
+    import os
+    from neo4j import GraphDatabase
+    uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
+    user = os.getenv("NEO4J_USER", "neo4j")
+    password = os.getenv("NEO4J_PASSWORD", "dataagent")
+    try:
+        driver = GraphDatabase.driver(uri, auth=(user, password))
+        with driver.session() as session:
+            # Fetch nodes
+            node_result = session.run(
+                "MATCH (n) WHERE n.workspace = $ws RETURN n",
+                ws=ws
+            )
+            nodes = []
+            for record in node_result:
+                n = record["n"]
+                props = dict(n.items())
+                nodes.append({
+                    "id": props.get("id", str(n.id)),
+                    "label": props.get("alias") or props.get("name") or props.get("id", ""),
+                    "type": list(n.labels)[0] if n.labels else "Unknown",
+                    "table": props.get("table", ""),
+                })
+            # Fetch edges
+            edge_result = session.run(
+                "MATCH (a)-[r]->(b) WHERE a.workspace = $ws AND b.workspace = $ws RETURN a.id AS src, b.id AS dst, type(r) AS rel_type",
+                ws=ws
+            )
+            edges = []
+            for record in edge_result:
+                edges.append({
+                    "source": record["src"],
+                    "target": record["dst"],
+                    "type": record["rel_type"],
+                })
+        driver.close()
+        return {"nodes": nodes, "edges": edges}
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ── Workspace chat (pipeline-based SSE) ──────────────────────────────────────
+
+class WorkspaceChatRequest(BaseModel):
+    question: str
+    session_id: str = "default"
+
+
+def _is_attribution_question(question: str) -> bool:
+    """Detect if the question is asking for causal attribution."""
+    keywords = ["为什么", "原因", "归因", "怎么", "如何导致", "什么导致", "分析原因", "根因"]
+    return any(kw in question for kw in keywords)
+
+
+def _sse(event: str, payload: dict) -> str:
+    """Format a named SSE event compatible with useChat hook."""
+    return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
+
+
+async def _stream_pipeline_chat(ws: str, question: str, session_id: str) -> AsyncGenerator[str, None]:
+    """Run text_to_sql or attribution stage and stream named SSE events."""
+    use_attribution = _is_attribution_question(question)
+    stage_name = "attribution" if use_attribution else "text_to_sql"
+    log_id = str(uuid.uuid4())[:8]
+    start_time = time.monotonic()
+
+    # Emit session info
+    yield _sse("session", {"session_id": session_id, "log_id": log_id})
+    yield _sse("intent", {"mode": stage_name, "keywords": []})
+
+    loop = asyncio.get_event_loop()
+    try:
+        result = await loop.run_in_executor(
+            None,
+            lambda: PipelineOrchestrator.run_stage(
+                ws, stage_name, input_data={"question": question}
+            ),
+        )
+    except Exception as exc:
+        duration_ms = int((time.monotonic() - start_time) * 1000)
+        error_msg = str(exc)
+        yield _sse("error", {"message": error_msg})
+        yield _sse("done", {})
+        try:
+            add_log(ws, question, stage_name, status="error", duration_ms=duration_ms, error=error_msg)
+        except Exception:
+            pass
+        return
+
+    if result.status == "failed":
+        duration_ms = int((time.monotonic() - start_time) * 1000)
+        error_msg = "; ".join(result.errors or ["执行失败"])
+        yield _sse("error", {"message": error_msg})
+        yield _sse("done", {})
+        try:
+            add_log(ws, question, stage_name, status="error", duration_ms=duration_ms, error=error_msg)
+        except Exception:
+            pass
+        return
+
+    data = result.data or {}
+    sql_logged = ""
+    interpretation_logged = ""
+    result_summary = ""
+
+    if use_attribution:
+        yield _sse("reasoning_start", {})
+        paths = data.get("paths", [])
+        step_num = 0
+        for path in paths[:3]:  # top 3 paths
+            for step in path.get("steps", []):
+                step_num += 1
+                yield _sse("reasoning_step", {
+                    "step_number": step_num,
+                    "causal_node": step.get("node_id", ""),
+                    "node_label": step.get("alias", step.get("node_id", "")),
+                    "metric_value": step.get("value"),
+                    "threshold": step.get("threshold"),
+                    "status": "abnormal" if step.get("is_abnormal") else "normal",
+                    "explanation": f"偏差: {step.get('deviation', 0):.1%}" if step.get("deviation") else "",
+                    "sql": step.get("sql", ""),
+                })
+        conclusion = data.get("conclusion", "")
+        if conclusion:
+            interpretation_logged = conclusion
+            yield _sse("reasoning_conclusion", {
+                "paths": [
+                    {"steps": p.get("steps", [])} for p in paths[:3]
+                ],
+                "summary": conclusion,
+            })
+    else:
+        # text_to_sql
+        sql = data.get("sql", "")
+        if sql:
+            sql_logged = sql
+            yield _sse("sql", {"sql": sql})
+
+        sql_result = data.get("result") or data.get("sql_result") or {}
+        if sql_result:
+            rows = sql_result.get("rows", [])
+            col_count = len(sql_result.get("columns", []))
+            result_summary = f"{len(rows)} rows × {col_count} columns"
+            yield _sse("data", {
+                "columns": sql_result.get("columns", []),
+                "rows": rows[:100],
+                "row_count": sql_result.get("row_count", len(rows)),
+                "error": sql_result.get("error"),
+            })
+
+        interpretation = data.get("interpretation") or data.get("conclusion") or ""
+        if interpretation:
+            interpretation_logged = interpretation
+            # Stream interpretation in chunks for a smoother UX
+            chunk_size = 50
+            for i in range(0, len(interpretation), chunk_size):
+                yield _sse("interpretation", {"chunk": interpretation[i:i + chunk_size]})
+
+    duration_ms = int((time.monotonic() - start_time) * 1000)
+    yield _sse("done", {})
+
+    # Persist to query log
+    try:
+        add_log(
+            ws,
+            question,
+            stage_name,
+            status="success",
+            duration_ms=duration_ms,
+            sql=sql_logged,
+            result_summary=result_summary,
+            interpretation=interpretation_logged,
+        )
+    except Exception:
+        pass
+
+
+@router.post("/workspaces/{ws}/chat")
+async def workspace_chat(ws: str, body: WorkspaceChatRequest):
+    """New pipeline-based SSE chat endpoint."""
+    _get_ws_or_404(ws)
+    return StreamingResponse(
+        _stream_pipeline_chat(ws, body.question, body.session_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )

@@ -1,0 +1,10 @@
+{
+  "status": "success",
+  "data": {
+    "paths": [],
+    "conclusion": "未找到上游因果链路"
+  },
+  "artifacts": [],
+  "message": "KG中无上游因果路径",
+  "errors": []
+}

@@ -1,0 +1,177 @@
+<mxGraphModel>
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+
+    <!-- Title -->
+    <mxCell id="title" value="DataAgent v2 - 可组合推理策略架构" style="text;fontSize=18;fontStyle=1;fontColor=#1a1a2e;align=center;" vertex="1" parent="1">
+      <mxGeometry x="180" y="10" width="550" height="30" as="geometry"/>
+    </mxCell>
+
+    <!-- Input -->
+    <mxCell id="question" value="用户问题" style="shape=mxgraph.flowchart.terminator;whiteSpace=wrap;fillColor=#4f46e5;fontColor=#fff;strokeColor=#3730a3;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="375" y="55" width="130" height="35" as="geometry"/>
+    </mxCell>
+
+    <!-- Intent + Strategy Router -->
+    <mxCell id="intent_box" value="" style="rounded=1;fillColor=#E8EAF6;strokeColor=#283593;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="290" y="110" width="300" height="80" as="geometry"/>
+    </mxCell>
+    <mxCell id="intent_title" value="Intent Node (LangGraph)" style="text;fontSize=12;fontStyle=1;fontColor=#283593;" vertex="1" parent="1">
+      <mxGeometry x="340" y="115" width="200" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="intent_detail" value="1. LLM 意图分类 (关键词 + 语义)&#xa;2. StrategyRegistry.route() 匹配&#xa;3. 返回最优策略 + 置信度" style="text;fontSize=10;fontColor=#283593;align=left;" vertex="1" parent="1">
+      <mxGeometry x="305" y="138" width="270" height="45" as="geometry"/>
+    </mxCell>
+
+    <!-- Edge: question -> intent -->
+    <mxCell id="eq" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#283593;" edge="1" parent="1" source="question" target="intent_box">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Strategy Sub-graph cards (5 columns) -->
+    <!-- Causal -->
+    <mxCell id="causal_card" value="" style="rounded=1;fillColor=#FFEBEE;strokeColor=#C62828;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="30" y="230" width="150" height="280" as="geometry"/>
+    </mxCell>
+    <mxCell id="causal_title" value="因果归因" style="text;fontSize=13;fontStyle=1;fontColor=#C62828;align=center;" vertex="1" parent="1">
+      <mxGeometry x="30" y="238" width="150" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="causal_trigger" value="触发: 为什么 / 原因 / 归因" style="text;fontSize=9;fontColor=#C62828;align=center;" vertex="1" parent="1">
+      <mxGeometry x="30" y="258" width="150" height="15" as="geometry"/>
+    </mxCell>
+    <mxCell id="causal_flow" value="Neo4j 入口定位&#xa;    &#x2193;&#xa;CAUSES 边遍历&#xa;    &#x2193;&#xa;逐节点 SQL 验证&#xa;    &#x2193;&#xa;偏差评分排序&#xa;    &#x2193;&#xa;多路径结论生成" style="rounded=1;whiteSpace=wrap;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=10;align=center;" vertex="1" parent="1">
+      <mxGeometry x="42" y="280" width="126" height="160" as="geometry"/>
+    </mxCell>
+    <mxCell id="causal_out" value="归因路径 DAG" style="text;fontSize=9;fontStyle=2;fontColor=#C62828;align=center;" vertex="1" parent="1">
+      <mxGeometry x="30" y="450" width="150" height="15" as="geometry"/>
+    </mxCell>
+
+    <!-- Statistical -->
+    <mxCell id="stat_card" value="" style="rounded=1;fillColor=#E3F2FD;strokeColor=#0D47A1;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="200" y="230" width="150" height="280" as="geometry"/>
+    </mxCell>
+    <mxCell id="stat_title" value="统计归因" style="text;fontSize=13;fontStyle=1;fontColor=#0D47A1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="200" y="238" width="150" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="stat_trigger" value="触发: 相关性 / 影响 / 驱动" style="text;fontSize=9;fontColor=#0D47A1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="200" y="258" width="150" height="15" as="geometry"/>
+    </mxCell>
+    <mxCell id="stat_flow" value="KG 指标集合获取&#xa;    &#x2193;&#xa;多指标 SQL 查询&#xa;    &#x2193;&#xa;Pearson/Spearman&#xa;相关系数计算&#xa;    &#x2193;&#xa;显著性检验&#xa;    &#x2193;&#xa;关联排名输出" style="rounded=1;whiteSpace=wrap;fillColor=#BBDEFB;strokeColor=#0D47A1;fontSize=10;align=center;" vertex="1" parent="1">
+      <mxGeometry x="212" y="280" width="126" height="160" as="geometry"/>
+    </mxCell>
+    <mxCell id="stat_out" value="相关性矩阵" style="text;fontSize=9;fontStyle=2;fontColor=#0D47A1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="200" y="450" width="150" height="15" as="geometry"/>
+    </mxCell>
+
+    <!-- Comparative -->
+    <mxCell id="comp_card" value="" style="rounded=1;fillColor=#E8F5E9;strokeColor=#1B5E20;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="370" y="230" width="150" height="280" as="geometry"/>
+    </mxCell>
+    <mxCell id="comp_title" value="对比分析" style="text;fontSize=13;fontStyle=1;fontColor=#1B5E20;align=center;" vertex="1" parent="1">
+      <mxGeometry x="370" y="238" width="150" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="comp_trigger" value="触发: 对比 / 环比 / 同比 / vs" style="text;fontSize=9;fontColor=#1B5E20;align=center;" vertex="1" parent="1">
+      <mxGeometry x="370" y="258" width="150" height="15" as="geometry"/>
+    </mxCell>
+    <mxCell id="comp_flow" value="确定对比维度&#xa;(时间/地区/产品)&#xa;    &#x2193;&#xa;生成双 SQL 查询&#xa;(当期 vs 基期)&#xa;    &#x2193;&#xa;计算 Delta%&#xa;    &#x2193;&#xa;差异解读" style="rounded=1;whiteSpace=wrap;fillColor=#C8E6C9;strokeColor=#1B5E20;fontSize=10;align=center;" vertex="1" parent="1">
+      <mxGeometry x="382" y="280" width="126" height="160" as="geometry"/>
+    </mxCell>
+    <mxCell id="comp_out" value="对比柱状图" style="text;fontSize=9;fontStyle=2;fontColor=#1B5E20;align=center;" vertex="1" parent="1">
+      <mxGeometry x="370" y="450" width="150" height="15" as="geometry"/>
+    </mxCell>
+
+    <!-- Trend -->
+    <mxCell id="trend_card" value="" style="rounded=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="540" y="230" width="150" height="280" as="geometry"/>
+    </mxCell>
+    <mxCell id="trend_title" value="趋势追踪" style="text;fontSize=13;fontStyle=1;fontColor=#E65100;align=center;" vertex="1" parent="1">
+      <mxGeometry x="540" y="238" width="150" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="trend_trigger" value="触发: 趋势 / 变化 / 走势" style="text;fontSize=9;fontColor=#E65100;align=center;" vertex="1" parent="1">
+      <mxGeometry x="540" y="258" width="150" height="15" as="geometry"/>
+    </mxCell>
+    <mxCell id="trend_flow" value="时间序列 SQL&#xa;    &#x2193;&#xa;resample + 填充&#xa;    &#x2193;&#xa;STL 季节分解&#xa;(statsmodels)&#xa;    &#x2193;&#xa;异常点检测&#xa;    &#x2193;&#xa;趋势报告" style="rounded=1;whiteSpace=wrap;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=10;align=center;" vertex="1" parent="1">
+      <mxGeometry x="552" y="280" width="126" height="160" as="geometry"/>
+    </mxCell>
+    <mxCell id="trend_out" value="时序折线图" style="text;fontSize=9;fontStyle=2;fontColor=#E65100;align=center;" vertex="1" parent="1">
+      <mxGeometry x="540" y="450" width="150" height="15" as="geometry"/>
+    </mxCell>
+
+    <!-- What-if -->
+    <mxCell id="whatif_card" value="" style="rounded=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="710" y="230" width="150" height="280" as="geometry"/>
+    </mxCell>
+    <mxCell id="whatif_title" value="What-if 模拟" style="text;fontSize=13;fontStyle=1;fontColor=#6A1B9A;align=center;" vertex="1" parent="1">
+      <mxGeometry x="710" y="238" width="150" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="whatif_trigger" value="触发: 如果 / 假设 / 模拟" style="text;fontSize=9;fontColor=#6A1B9A;align=center;" vertex="1" parent="1">
+      <mxGeometry x="710" y="258" width="150" height="15" as="geometry"/>
+    </mxCell>
+    <mxCell id="whatif_flow" value="参数提取&#xa;(用户假设条件)&#xa;    &#x2193;&#xa;参数化 SQL 模板&#xa;    &#x2193;&#xa;多场景并行执行&#xa;    &#x2193;&#xa;结果对比&#xa;    &#x2193;&#xa;模拟结论" style="rounded=1;whiteSpace=wrap;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=10;align=center;" vertex="1" parent="1">
+      <mxGeometry x="722" y="280" width="126" height="160" as="geometry"/>
+    </mxCell>
+    <mxCell id="whatif_out" value="多场景对比表" style="text;fontSize=9;fontStyle=2;fontColor=#6A1B9A;align=center;" vertex="1" parent="1">
+      <mxGeometry x="710" y="450" width="150" height="15" as="geometry"/>
+    </mxCell>
+
+    <!-- Edges from intent to strategies -->
+    <mxCell id="es1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#C62828;dashed=1;" edge="1" parent="1" source="intent_box" target="causal_card">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="es2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#0D47A1;dashed=1;" edge="1" parent="1" source="intent_box" target="stat_card">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="es3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#1B5E20;dashed=1;" edge="1" parent="1" source="intent_box" target="comp_card">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="es4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#E65100;dashed=1;" edge="1" parent="1" source="intent_box" target="trend_card">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="es5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#6A1B9A;dashed=1;" edge="1" parent="1" source="intent_box" target="whatif_card">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Converge to Conclude -->
+    <mxCell id="conclude_box" value="" style="rounded=1;fillColor=#C8E6C9;strokeColor=#2E7D32;strokeWidth=2;" vertex="1" parent="1">
+      <mxGeometry x="290" y="540" width="300" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="conclude_title" value="Conclude Node" style="text;fontSize=12;fontStyle=1;fontColor=#2E7D32;" vertex="1" parent="1">
+      <mxGeometry x="370" y="545" width="140" height="20" as="geometry"/>
+    </mxCell>
+    <mxCell id="conclude_detail" value="LLM 综合所有步骤 + 自动图表选择 + 建议生成" style="text;fontSize=10;fontColor=#2E7D32;align=center;" vertex="1" parent="1">
+      <mxGeometry x="300" y="568" width="280" height="20" as="geometry"/>
+    </mxCell>
+
+    <!-- Edges from strategies to conclude -->
+    <mxCell id="ec1" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#2E7D32;" edge="1" parent="1" source="causal_card" target="conclude_box">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="ec2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#2E7D32;" edge="1" parent="1" source="stat_card" target="conclude_box">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="ec3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#2E7D32;" edge="1" parent="1" source="comp_card" target="conclude_box">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="ec4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#2E7D32;" edge="1" parent="1" source="trend_card" target="conclude_box">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="ec5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#2E7D32;" edge="1" parent="1" source="whatif_card" target="conclude_box">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Output -->
+    <mxCell id="output2" value="SSE Stream + 图表 + 结论" style="shape=mxgraph.flowchart.terminator;whiteSpace=wrap;fillColor=#4f46e5;fontColor=#fff;strokeColor=#3730a3;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="340" y="630" width="200" height="35" as="geometry"/>
+    </mxCell>
+    <mxCell id="eo" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#283593;" edge="1" parent="1" source="conclude_box" target="output2">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Registry annotation -->
+    <mxCell id="registry_note" value="StrategyRegistry&#xa;@register 装饰器注册&#xa;route() 动态路由" style="rounded=1;whiteSpace=wrap;fillColor=#F5F5F5;strokeColor=#999;fontSize=10;dashed=1;align=center;" vertex="1" parent="1">
+      <mxGeometry x="760" y="110" width="140" height="55" as="geometry"/>
+    </mxCell>
+
+  </root>
+</mxGraphModel>

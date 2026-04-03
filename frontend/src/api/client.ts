@@ -112,16 +112,45 @@ export function fetchSSE(
           // Keep incomplete last line in buffer
           buffer = lines.pop() ?? '';
 
+          // Track current event name for `event:` + `data:` SSE format
+          let currentEventName = '';
+
           for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
+            // Handle `event:` lines (new format)
+            if (line.startsWith('event:')) {
+              currentEventName = line.slice(6).trim();
+              continue;
+            }
+
+            if (!line.startsWith('data: ')) {
+              // Empty line resets the event name (SSE message boundary)
+              if (line.trim() === '') currentEventName = '';
+              continue;
+            }
+
             const raw = line.slice(6).trim();
             if (!raw) continue;
+
             try {
               const parsed = JSON.parse(raw) as SSEEvent;
-              onEvent(parsed);
-              if (parsed.type === 'done') {
-                onDone?.();
-                return;
+
+              // If we captured an event name from a preceding `event:` line,
+              // inject it so callers get a unified { event, data } shape.
+              if (currentEventName) {
+                const unified = { event: currentEventName, data: parsed } as unknown as SSEEvent;
+                onEvent(unified);
+                if (currentEventName === 'done' || parsed.type === 'done') {
+                  onDone?.();
+                  return;
+                }
+                currentEventName = '';
+              } else {
+                // Old format: type field inside data object
+                onEvent(parsed);
+                if (parsed.type === 'done') {
+                  onDone?.();
+                  return;
+                }
               }
             } catch {
               // ignore malformed SSE lines
