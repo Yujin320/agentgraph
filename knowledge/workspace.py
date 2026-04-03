@@ -20,10 +20,12 @@ class Workspace:
       - docs/               — optional documents for RAG (PDF, DOCX, TXT)
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, *, create: bool = False):
         self.name = name
         self.path = WORKSPACES_DIR / name
-        if not self.path.is_dir():
+        if create:
+            self.path.mkdir(parents=True, exist_ok=True)
+        elif not self.path.is_dir():
             raise FileNotFoundError(f"Workspace '{name}' not found at {self.path}")
         self._config: dict = self._load_yaml("workspace.yaml")
         self._causal_graph: Optional[dict] = None
@@ -92,6 +94,18 @@ class Workspace:
         d = self.path / "docs"
         return d if d.is_dir() else None
 
+    @property
+    def workspace_dir(self) -> Path:
+        """Absolute path to the workspace directory."""
+        return self.path
+
+    def save_config(self, config: dict) -> None:
+        """Merge config into workspace.yaml and persist."""
+        self._config.update(config)
+        p = self.path / "workspace.yaml"
+        with open(p, "w", encoding="utf-8") as f:
+            yaml.dump(self._config, f, allow_unicode=True, default_flow_style=False)
+
     # ── Database ─────────────────────────────────────────────────────────────
 
     def get_engine(self) -> Engine:
@@ -137,3 +151,11 @@ class Workspace:
     @classmethod
     def get(cls, name: str) -> "Workspace":
         return cls(name)
+
+    @classmethod
+    def create(cls, name: str, config: dict | None = None) -> "Workspace":
+        """Create a new workspace directory with optional initial config."""
+        ws = cls(name, create=True)
+        if config:
+            ws.save_config(config)
+        return ws

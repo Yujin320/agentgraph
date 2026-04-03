@@ -1,422 +1,1007 @@
-# Arawana智能问数系统 — 语义字典
-# 版本: 3.0
-# 说明: 字段中文映射、值域说明、表关联关系及业务规则
-# 扩展方式: 见文件末尾 _extensibility 章节
-
-# ─────────────────────────────────────────
-# 表定义
-# ─────────────────────────────────────────
+business_rules:
+  库存预警规则:
+    description: 当库存数量小于或等于安全库存时，触发补货预警
+    example_sql: SELECT mat_name, stock_qty_mt, safety_stock_mt FROM inventory WHERE stock_qty_mt <= safety_stock_mt
+    rule: stock_qty_mt <= safety_stock_mt
+    table: inventory
+  质量合格率计算:
+    description: 计算批次产品的质量合格率
+    example_sql: SELECT mat_name, (1 - defect_count/sample_size) AS pass_rate FROM quality_inspection
+    rule: (sample_size - defect_count) / sample_size
+    table: quality_inspection
+  销售退货识别:
+    description: 识别销售交货单中的退货记录
+    example_sql: SELECT delivnum, deliv_qty FROM sales_delivery WHERE deliv_retrngds_identfctn = 'Y'
+    rule: deliv_retrngds_identfctn = 'Y'
+    table: sales_delivery
+query_term_mapping:
+  分公司: brnch_code
+  加班时长: actual_hours
+  工厂: plant_code
+  库存不足: stock_qty_mt <= safety_stock_mt
+  投诉率: COUNT(complaint_id) / COUNT(sales_ordernum)
+  物料: mat_code
+  生产合格率: (sample_size - defect_count) / sample_size
+  统计年月: record_yearmth
+  退货单: deliv_retrngds_identfctn = 'Y'
+  销售额: deliv_qty
+table_relationships:
+- join_type: LEFT JOIN
+  left: sales_order
+  name: 分公司销售与投诉关联
+  note: 通过分公司代码关联，用于分析各分公司投诉率
+  'on': sales_order.brnch_code = customer_complaint.brnch_code
+  right: customer_complaint
+- join_type: INNER JOIN
+  left: production_output
+  name: 工厂生产与质量检验关联
+  note: 通过批次号和物料编码关联，追踪生产产出的质量情况
+  'on': production_output.batch_id = quality_inspection.batch_id AND production_output.mat_code = quality_inspection.mat_code
+  right: quality_inspection
+- join_type: LEFT JOIN
+  left: procurement
+  name: 采购与工厂库存关联
+  note: 用于分析原材料采购入库对工厂库存的影响
+  'on': procurement.target_plant_code = inventory.plant_code AND procurement.raw_material_code = inventory.mat_code
+  right: inventory
 tables:
-
-  sales_delivery:
-    alias: "提单明细表"
-    description: "记录每一笔提货（出库）的明细，是实际销量的基础数据"
-    primary_key: "delivnum"
-    row_granularity: "每行 = 一条提单（一次客户提货记录）"
+  customer_complaint:
+    alias: 客户投诉记录表
+    description: 记录公司各分公司客户针对产品及服务提出的投诉详情及处理进度。
     fields:
-      delivnum:
-        alias: "提单号"
-        type: string
-        description: "提单唯一编号，可用于JOIN或去重"
-      deliv_crt_time:
-        alias: "提单创建时间"
-        type: datetime
-        description: "提单生成的时间戳，格式 YYYY-MM-DD HH:MM:SS。⚠️ sales_delivery 没有 stats_yearmth 列！按月份过滤必须用 strftime('%Y%m', deliv_crt_time) = '202603'"
-        sqlite_date_fn: "strftime('%Y%m', deliv_crt_time) => 年月字符串，如 '202603'"
-        important: "此表无 stats_yearmth 列，月份筛选只能用 strftime('%Y%m', deliv_crt_time)"
       brnch_code:
-        alias: "分公司编码"
+        alias: 分公司代码
+        description: 所属分公司的唯一编码
         type: string
-        description: "所属分公司的编码，与 rolling_plan 关联的 JOIN 键"
       brnch_descrptn:
-        alias: "分公司名称"
+        alias: 分公司名称
+        description: 分公司的中文描述名称
         type: string
-        description: "分公司中文名称，用于分组展示"
-        example: "成都分公司、重庆分公司"
-      busline_code:
-        alias: "业务线编码"
-        type: string
-        description: "业务线编码，与 rolling_plan 关联的 JOIN 键"
-        example: "'FOOD_OIL'"
-      deliv_soldto_code:
-        alias: "售达方编码"
-        type: string
-        description: "客户（售达方）的系统编码"
-      deliv_soldto_name:
-        alias: "售达方名称"
-        type: string
-        description: "客户中文名称，用于客户维度分析"
-      deliv_mat_code:
-        alias: "物料编码"
-        type: string
-        description: "产品的物料主数据编码"
-      deliv_mat_name:
-        alias: "物料名称"
-        type: string
-        description: "产品中文名称，如 'Arawana大豆油5L'"
-      deliv_prodctnline_descrptn:
-        alias: "产线名称"
-        type: string
-        description: "产品所属产线，如 大豆油、菜籽油、调和油、包装米等"
-      deliv_sply_plant_code:
-        alias: "供货工厂编码"
-        type: string
-        description: "实际供货工厂的系统编码"
-      deliv_sply_plant_descrptn:
-        alias: "供货工厂名称"
-        type: string
-        description: "供货工厂中文名称，用于外调品来源分析"
-      deliv_qty_mt:
-        alias: "提货量（吨）"
-        type: float
-        description: "本次提货的重量，单位：吨（MT）"
-      deliv_distri_chnl_descrptn:
-        alias: "经销渠道"
-        type: string
-        description: "销售渠道描述"
-        example: "商超、电商、流通、餐饮"
-      deliv_retrngds_identfctn:
-        alias: "退货标识"
-        type: string
-        description: "非空表示该提单为退货，正常业务分析需过滤掉"
-        filter_rule: "WHERE deliv_retrngds_identfctn IS NULL"
-      is_external_transfer:
-        alias: "外调品标识"
-        type: integer
-        description: "1=外调品（供货工厂不在川渝本地），0=本地供货"
-        values: {1: "外调品", 0: "本地供货"}
-      logistics_cost_per_mt:
-        alias: "每吨物流成本（元）"
-        type: float
-        description: "该提单对应的每吨物流运费，用于外调品成本对比"
-      rgn_code:
-        alias: "大区编码"
-        type: string
-        description: "所属大区编码。⚠️ POC 数据只有一个大区 'YH0021'（西南区），无需按此字段筛选"
-        example: "'YH0021'"
-      rgn_descrptn:
-        alias: "大区名称"
-        type: string
-        description: "大区中文名称"
-        example: "'西南区'"
-
-  sales_order:
-    alias: "订单明细表"
-    description: "记录客户下单的销售订单，与提单对应形成订单-发货关系"
-    primary_key: "ordernum"
-    row_granularity: "每行 = 一条订单行项目"
-    fields:
-      ordernum:
-        alias: "订单号"
-        type: string
-        description: "销售订单唯一编号"
-      order_crt_date:
-        alias: "订单创建日期"
+      complaint_date:
+        alias: 投诉日期
+        description: 客户发起投诉的具体日期
         type: date
-        description: "订单生成日期，格式 YYYY-MM-DD。⚠️ sales_order 没有 stats_yearmth 列！按月份过滤必须用 strftime('%Y%m', order_crt_date) = '202603'"
-        sqlite_date_fn: "strftime('%Y%m', order_crt_date) => 年月"
-        important: "此表无 stats_yearmth 列，月份筛选只能用 strftime('%Y%m', order_crt_date)"
-      brnch_code:
-        alias: "分公司编码"
+      complaint_id:
+        alias: 投诉编号
+        description: 投诉记录的唯一标识符
+        important: 主键
         type: string
-      brnch_descrptn:
-        alias: "分公司名称"
+      complaint_type:
+        alias: 投诉类型
+        description: 投诉的具体原因分类，如交期延迟、产品质量等
         type: string
-      order_soldto_name:
-        alias: "售达方名称"
+      complaint_yearmth:
+        alias: 投诉年月
+        description: 投诉发生的年月，格式为YYYYMM，用于按月统计分析
+        important: 维度字段
         type: string
-        description: "下单客户名称"
-      order_mat_name:
-        alias: "物料名称"
+      customer_code:
+        alias: 客户代码
+        description: 投诉客户的唯一编码
         type: string
-      order_prodctnline_descrptn:
-        alias: "产线名称"
+      customer_name:
+        alias: 客户名称
+        description: 投诉客户的单位名称
         type: string
-      order_qty_mt:
-        alias: "订单量（吨）"
-        type: float
-        description: "订单中约定的货品重量，单位：吨"
-      order_dlvry_sts_code:
-        alias: "交货状态编码"
-        type: string
-        description: "订单的交货完成状态"
-        values:
-          "A": "未开始交货"
-          "B": "部分交货"
-          "C": "完全交货（已完成）"
-        filter_rule: "倒挂分析: WHERE order_dlvry_sts_code != 'C'"
-      order_pymnt_sts:
-        alias: "打款状态"
-        type: string
-        description: "客户付款状态，月末挤水分析的关键字段"
-        values:
-          "PAID": "已打款"
-          "UNPAID": "未打款"
-          "PARTIAL": "部分打款"
-      busline_code:
-        alias: "业务线编码"
-        type: string
-      rgn_code:
-        alias: "大区编码"
-        type: string
-        description: "所属大区编码。⚠️ POC 数据只有 'YH0021'（西南区），无需按此筛选"
-      rgn_descrptn:
-        alias: "大区名称"
-        type: string
-
-  rolling_plan:
-    alias: "滚动计划表"
-    description: "月度滚动销售计划，用于与实际提货量对比计算达成率"
-    primary_key: "plan_id"
-    row_granularity: "每行 = 一个分公司+业务线+年月的计划量"
-    join_keys: "brnch_code + busline_code + stats_yearmth（与 sales_delivery 关联）"
-    fields:
-      plan_id:
-        alias: "计划记录ID"
+      is_resolved:
+        alias: 是否已解决
+        description: 投诉处理状态，1表示已解决，0表示未解决
+        important: 布尔标识，0/1取值
         type: integer
-      stats_yearmth:
-        alias: "计划年月"
-        type: string
-        description: "计划所属年月，格式 YYYYMM，JOIN键"
-      brnch_code:
-        alias: "分公司编码"
-        type: string
-        description: "JOIN键"
-      brnch_descrptn:
-        alias: "分公司名称"
-        type: string
-      busline_code:
-        alias: "业务线编码"
-        type: string
-        description: "JOIN键"
-      busline_descrptn:
-        alias: "业务线名称"
-        type: string
-      rllng_planqty_mt:
-        alias: "滚动计划量（吨）"
-        type: float
-        description: "当月滚动调整后的销量计划，单位：吨"
-      original_planqty_mt:
-        alias: "原始计划量（吨）"
-        type: float
-        description: "月初制定的原始计划量，未经滚动调整"
-      rgn_code:
-        alias: "大区编码"
-        type: string
-        description: "⚠️ POC 数据只有 'YH0021'（西南区），无需按此筛选"
-      rgn_descrptn:
-        alias: "大区名称"
-        type: string
-
-  production_output:
-    alias: "生产产出表"
-    description: "记录每个工厂每条产线每批次的计划产量与实际产量，用于生产达成率分析"
-    primary_key: "production_id"
-    row_granularity: "每行 = 一个工厂+产线+批次的生产记录"
-    fields:
-      production_id:
-        alias: "生产记录ID"
-        type: string
-      record_yearmth:
-        alias: "生产年月"
-        type: string
-        description: "生产记录所属年月，格式 YYYYMM，直接用于月份过滤：WHERE record_yearmth = '202603'"
-      plant_code:
-        alias: "工厂编码"
-        type: string
-      plant_descrptn:
-        alias: "工厂名称"
-        type: string
-      planned_qty_mt:
-        alias: "计划产量（吨）"
-        type: float
-        description: "当批次的计划生产量，单位：吨"
-      actual_qty_mt:
-        alias: "实际产量（吨）"
-        type: float
-        description: "当批次的实际生产量，单位：吨"
-      yield_rate:
-        alias: "良品率"
-        type: float
-        description: "合格品占总产出的比例，0~1之间"
-
-  inventory:
-    alias: "库存快照表"
-    description: "记录每个工厂每种物料在月末的库存状态，用于库存告急分析"
-    primary_key: "inventory_id"
-    row_granularity: "每行 = 一个工厂+物料的月度库存快照"
-    fields:
-      inventory_id:
-        alias: "库存记录ID"
-        type: string
-      snapshot_yearmth:
-        alias: "快照年月"
-        type: string
-        description: "库存快照所属年月，格式 YYYYMM，直接用于月份过滤：WHERE snapshot_yearmth = '202603'"
-      plant_code:
-        alias: "工厂编码"
-        type: string
       mat_code:
-        alias: "物料编码"
+        alias: 物料代码
+        description: 投诉涉及的产品物料编码
         type: string
       mat_name:
-        alias: "物料名称"
+        alias: 物料名称
+        description: 投诉涉及的产品名称
+        type: string
+      related_batch_id:
+        alias: 关联批次号
+        description: 投诉产品对应的生产或物流批次编号
+        important: 部分记录可能为空
+        type: string
+      resolution:
+        alias: 处理方式
+        description: 针对该投诉采取的解决方案
+        type: string
+      resolution_days:
+        alias: 处理时长
+        description: 从投诉发起至处理完成所经过的天数
+        type: integer
+      severity:
+        alias: 严重程度
+        description: 投诉的紧急或严重等级，分为一般、重要、紧急
+        type: string
+    row_granularity: 每行代表一条客户投诉记录
+  inventory:
+    alias: 工厂库存快照表
+    description: 记录各工厂物料在特定日期的库存水平、进出库情况及供应状态，用于监控库存健康度。
+    fields:
+      days_of_supply:
+        alias: 供应天数
+        description: 当前库存可支撑的预计消耗天数
+        important: 反映库存周转压力
+        type: float
+      inbound_qty_mt:
+        alias: 入库数量(吨)
+        description: 当日或统计周期内的入库总量，单位为公吨(MT)
+        type: float
+      inventory_id:
+        alias: 库存记录ID
+        description: 库存记录的唯一标识符
+        important: 主键
+        type: string
+      mat_code:
+        alias: 物料代码
+        description: 库存物料的唯一编码
+        important: 关联物料主数据
+        type: string
+      mat_name:
+        alias: 物料名称
+        description: 库存物料的中文名称
+        type: string
+      outbound_qty_mt:
+        alias: 出库数量(吨)
+        description: 当日或统计周期内的出库总量，单位为公吨(MT)
+        type: float
+      plant_code:
+        alias: 工厂代码
+        description: 生产工厂的唯一编码
+        important: 关联工厂维度
+        type: string
+      plant_descrptn:
+        alias: 工厂名称
+        description: 工厂的中文描述名称
+        type: string
+      safety_stock_mt:
+        alias: 安全库存(吨)
+        description: 设定的最低安全库存阈值，单位为公吨(MT)
+        important: 用于判断库存是否预警
+        type: float
+      snapshot_date:
+        alias: 快照日期
+        description: 库存数据统计的具体日期
+        important: 用于时间序列分析
+        type: date
+      snapshot_yearmth:
+        alias: 快照年月
+        description: 库存数据统计的年月维度，格式为YYYYMM
+        important: 用于月度汇总统计
         type: string
       stock_qty_mt:
-        alias: "库存量（吨）"
+        alias: 库存数量(吨)
+        description: 当前库存的物理重量，单位为公吨(MT)
         type: float
-        description: "当前实际库存量，单位：吨"
-      safety_stock_mt:
-        alias: "安全库存（吨）"
-        type: float
-        description: "该物料的安全库存水位，低于此值视为库存告急"
-      days_of_supply:
-        alias: "可供天数"
-        type: float
-        description: "按当前库存量估算可支撑的销售天数"
       stock_status:
-        alias: "库存状态"
+        alias: 库存状态
+        description: 库存健康状态，如正常或低于安全库存
+        important: 可作为异常库存筛选条件
         type: string
-        description: "库存状态标签"
-        values: {"normal": "正常", "low": "偏低", "critical": "告急", "overstock": "积压"}
-
-# ─────────────────────────────────────────
-# 表关联关系
-# ─────────────────────────────────────────
-table_relationships:
-  - name: "提单与滚动计划"
-    left: "sales_delivery"
-    right: "rolling_plan"
-    join_type: "LEFT JOIN"
-    on: "sales_delivery.brnch_code = rolling_plan.brnch_code AND sales_delivery.busline_code = rolling_plan.busline_code AND strftime('%Y%m', sales_delivery.deliv_crt_time) = rolling_plan.stats_yearmth"
-    note: "sales_delivery 没有 stats_yearmth 列，必须用 strftime('%Y%m', deliv_crt_time) 做 JOIN"
-    use_case: "计算销量达成率"
-
-  - name: "订单与提单"
-    left: "sales_order"
-    right: "sales_delivery"
-    join_type: "LEFT JOIN"
-    on: "sales_order.ordernum = sales_delivery.ref_ordernum"
-    use_case: "分析订单到提货的转化（倒挂分析）"
-    note: "ref_ordernum为提单中记录的来源订单号字段（如存在）"
-
-# ─────────────────────────────────────────
-# 业务规则
-# ─────────────────────────────────────────
-business_rules:
-
-  外调品判断:
-    rule: "is_external_transfer = 1"
-    description: "供货工厂不在川渝本地（非GH01/CQ01/CD01）的提单即为外调品"
-    table: "sales_delivery"
-    example_sql: "WHERE is_external_transfer = 1"
-
-  达成率计算:
-    rule: "SUM(实际提货量) / SUM(滚动计划量) × 100%"
-    description: "当月累计提货量除以当月滚动计划量，百分比表示"
-    table: "sales_delivery JOIN rolling_plan"
-    example_sql: |
-      SELECT
-        ROUND(SUM(d.deliv_qty_mt) * 100.0 / SUM(p.rllng_planqty_mt), 2) AS achievement_rate
-      FROM sales_delivery d
-      LEFT JOIN rolling_plan p
-        ON d.brnch_code = p.brnch_code
-        AND d.busline_code = p.busline_code
-        AND strftime('%Y%m', d.deliv_crt_time) = p.stats_yearmth
-      WHERE strftime('%Y%m', d.deliv_crt_time) = '202603'
-        AND d.deliv_retrngds_identfctn IS NULL
-
-  倒挂率计算:
-    rule: "未完成交货订单量 / 总有效订单量 × 100%"
-    description: "order_dlvry_sts_code != 'C' 的订单视为倒挂（未完成交货）"
-    table: "sales_order"
-    example_sql: |
-      SELECT
-        ROUND(SUM(CASE WHEN order_dlvry_sts_code != 'C' THEN order_qty_mt ELSE 0 END) * 100.0 / SUM(order_qty_mt), 2) AS hangover_rate
-      FROM sales_order
-      WHERE strftime('%Y%m', order_crt_date) = '202603'
-
-  月末挤水判断:
-    rule: "月末最后3-5天（26日及之后）创建的订单中未打款比例"
-    description: "识别月末冲量但未真实成交的虚假订单"
-    table: "sales_order"
-    example_sql: |
-      SELECT
-        order_pymnt_sts,
-        COUNT(*) AS order_count,
-        SUM(order_qty_mt) AS total_qty
-      FROM sales_order
-      WHERE strftime('%Y%m', order_crt_date) = '202603'
-        AND strftime('%d', order_crt_date) >= '26'
-      GROUP BY order_pymnt_sts
-
-  退货排除:
-    rule: "deliv_retrngds_identfctn IS NULL"
-    description: "提单分析时必须排除退货记录，否则会低估实际销量"
-    table: "sales_delivery"
-    example_sql: "WHERE deliv_retrngds_identfctn IS NULL"
-
-  POC数据范围:
-    rule: "所有数据均属于同一大区（西南区 rgn_code='YH0021'），无需按大区过滤"
-    description: "POC 仿真数据只包含川渝大区数据，无需按大区过滤。字段名是 rgn_code 而非 region_code"
-
-  字段命名规范:
-    rule: "数据库字段使用缩写命名，常见映射：rgn=大区 brnch=分公司 descrptn=描述 deliv=提单 prodctnline=产线 identfctn=标识 retrngds=退货"
-    description: "生成SQL时必须使用数据库中实际存在的字段名（见上方字段列表），不可自行编造字段名"
-
-  SQLite日期处理:
-    strftime_yearmth: "strftime('%Y%m', date_column) — 提取年月字符串，如 '202603'"
-    strftime_year: "strftime('%Y', date_column) — 提取年份"
-    strftime_month: "strftime('%m', date_column) — 提取月份"
-    strftime_day: "strftime('%d', date_column) — 提取日期（两位）"
-    current_month: "'202603'  # POC阶段固定为当前月"
-    note: "SQLite不支持DATE_FORMAT，统一使用strftime"
-
-  外调品物流成本对比:
-    rule: "按 is_external_transfer 分组，对比 AVG(logistics_cost_per_mt)"
-    description: "外调品每吨物流成本通常高于本地供货，差值即为优化空间"
-    table: "sales_delivery"
-
-# ─────────────────────────────────────────
-# 常用中文查询词映射
-# ─────────────────────────────────────────
-query_term_mapping:
-  "这个月": "strftime('%Y%m', deliv_crt_time) = '202603'（sales_delivery）或 strftime('%Y%m', order_crt_date) = '202603'（sales_order）或 stats_yearmth = '202603'（rolling_plan）"
-  "3月": "同上，'202603'"
-  "上个月": "同上，'202602'"
-  "外调品": "is_external_transfer = 1"
-  "本地货": "is_external_transfer = 0"
-  "提货量": "deliv_qty_mt"
-  "销量": "deliv_qty_mt"
-  "计划量": "rllng_planqty_mt"
-  "达成率": "SUM(deliv_qty_mt)/SUM(rllng_planqty_mt)"
-  "完成率": "SUM(deliv_qty_mt)/SUM(rllng_planqty_mt)"
-  "运费": "logistics_cost_per_mt"
-  "物流成本": "logistics_cost_per_mt"
-  "倒挂": "order_dlvry_sts_code != 'C'"
-  "积压": "order_dlvry_sts_code != 'C'"
-  "未交货": "order_dlvry_sts_code != 'C'"
-  "打款": "order_pymnt_sts"
-  "分公司": "brnch_descrptn"
-  "产线": "deliv_prodctnline_descrptn"
-  "渠道": "deliv_distri_chnl_descrptn"
-  "工厂": "deliv_sply_plant_descrptn"
-  "客户": "deliv_soldto_name 或 order_soldto_name"
-
-# ─────────────────────────────────────────
-# 扩展说明
-# ─────────────────────────────────────────
-_extensibility:
-  add_new_table: |
-    在 tables: 下添加新的顶级key，格式与现有表相同。
-    必填: alias, description, primary_key, row_granularity, fields
-    可选: join_keys（如果该表需要与其他表关联）
-  add_new_field: |
-    在对应表的 fields: 下添加新key，格式:
-      field_name:
-        alias: "中文别名"
-        type: string|integer|float|date|datetime
-        description: "字段说明"
-        example: "示例值（可选）"
-  add_new_rule: |
-    在 business_rules: 下添加新的规则key，必填: rule, description, table
+    row_granularity: 每行=某工厂某物料在特定日期的库存快照记录
+  overtime_hours:
+    alias: 工厂加班工时记录表
+    description: 记录各工厂车间生产线在不同班次下的计划工时、实际工时及加班工时情况，用于分析加班成本与原因。
+    fields:
+      actual_hours:
+        alias: 实际工时
+        description: 该班次实际投入的总工作时长（小时）
+        important: 包含正常工时与加班工时
+        type: float
+      overtime_cost:
+        alias: 加班成本
+        description: 该班次产生的加班费用总额
+        important: 核心财务指标，用于成本控制分析
+        type: float
+      overtime_hours:
+        alias: 加班工时
+        description: 实际工时超出计划工时的部分（小时）
+        important: 核心度量指标，计算公式为：实际工时 - 计划工时
+        type: float
+      overtime_reason:
+        alias: 加班原因
+        description: 导致加班的具体业务原因，如设备故障、紧急订单等
+        important: 用于加班原因的归因分析
+        type: string
+      plant_code:
+        alias: 工厂代码
+        description: 工厂的唯一编码标识
+        important: 关联工厂信息的基础维度
+        type: string
+      plant_descrptn:
+        alias: 工厂名称
+        description: 工厂的中文名称
+        important: 用于报表展示
+        type: string
+      production_line:
+        alias: 生产线
+        description: 具体的生产线编号或名称
+        important: 用于生产线维度的效率分析
+        type: string
+      record_date:
+        alias: 记录日期
+        description: 发生加班的实际日期
+        important: 用于按日进行时间维度的统计分析
+        type: date
+      record_id:
+        alias: 记录唯一标识
+        description: 记录的主键ID，唯一标识每一条加班数据
+        important: 系统自动生成，不可重复
+        type: integer
+      record_yearmth:
+        alias: 年月维度
+        description: 记录所属的年月，格式为YYYYMM
+        important: 用于按月进行汇总统计
+        type: string
+      scheduled_hours:
+        alias: 计划工时
+        description: 该班次原定的标准工作时长（小时）
+        important: 作为计算加班工时的基准
+        type: float
+      shift_type:
+        alias: 班次类型
+        description: 工作班次，包括白班、中班、夜班
+        important: 用于分析不同班次的加班分布
+        type: string
+      worker_count:
+        alias: 作业人数
+        description: 该班次参与作业的员工总数
+        important: 用于计算人均加班工时或人均加班成本
+        type: integer
+      workshop:
+        alias: 车间名称
+        description: 所属生产车间，如精炼车间、灌装车间等
+        important: 用于车间维度的绩效分析
+        type: string
+    row_granularity: 每行代表某工厂某车间某生产线在特定日期及班次的加班工时统计记录
+  procurement:
+    alias: 采购订单明细表
+    description: 记录企业原材料采购订单的执行情况、到货进度及供应商供货表现。
+    fields:
+      actual_arrival:
+        alias: 实际到货日期
+        description: 原材料实际送达工厂的日期
+        type: date
+      delay_days:
+        alias: 延迟天数
+        description: 实际到货日期与预计到货日期的差值，0表示未延迟
+        type: integer
+      expected_arrival:
+        alias: 预计到货日期
+        description: 订单约定的原材料送达日期
+        type: date
+      order_qty_mt:
+        alias: 订单数量(吨)
+        description: 采购订单中约定的采购重量，单位为公吨
+        type: float
+      po_date:
+        alias: 下单日期
+        description: 采购订单正式创建的日期
+        type: date
+      po_id:
+        alias: 采购订单编号
+        description: 采购订单的唯一标识符
+        important: 主键，用于唯一标识单笔采购业务
+        type: string
+      po_yearmth:
+        alias: 采购年月
+        description: 采购订单所属的年月维度，格式为YYYYMM
+        important: 常用于按月度进行采购统计分析
+        type: string
+      raw_material_code:
+        alias: 原材料编码
+        description: 采购原材料的唯一识别代码
+        type: string
+      raw_material_name:
+        alias: 原材料名称
+        description: 采购原材料的品名描述
+        type: string
+      received_qty_mt:
+        alias: 实收数量(吨)
+        description: 实际入库的原材料重量，单位为公吨
+        type: float
+      status:
+        alias: 订单状态
+        description: 订单当前的执行状态，如已到货、在途、延迟
+        type: string
+      supplier_code:
+        alias: 供应商编码
+        description: 供应商的唯一识别代码
+        type: string
+      supplier_name:
+        alias: 供应商名称
+        description: 提供原材料的供应商全称
+        type: string
+      target_plant_code:
+        alias: 目标工厂编码
+        description: 收货工厂的唯一识别代码
+        type: string
+      target_plant_descrptn:
+        alias: 目标工厂名称
+        description: 接收原材料的工厂名称
+        type: string
+      total_amount:
+        alias: 订单总金额
+        description: 该笔采购订单的总金额，通常为单价乘以订单数量
+        type: float
+      unit_price:
+        alias: 单价
+        description: 原材料的采购单价
+        type: float
+    row_granularity: 每行代表一条采购订单明细记录
+  production_output:
+    alias: 生产产出记录表
+    description: 记录工厂各生产线每日的物料生产计划、实际产出、良率及停机时间等生产执行数据。
+    fields:
+      actual_qty_mt:
+        alias: 实际产量(吨)
+        description: 该批次实际产出的合格品重量，单位为吨
+        type: float
+      batch_id:
+        alias: 生产批次号
+        description: 生产过程中的唯一批次标识
+        type: string
+      downtime_hours:
+        alias: 停机时间(小时)
+        description: 该批次生产期间设备停机或故障的总时长
+        type: float
+      mat_code:
+        alias: 物料编码
+        description: 生产产品的物料唯一编码
+        type: string
+      mat_name:
+        alias: 物料名称
+        description: 生产产品的中文名称及规格
+        type: string
+      planned_qty_mt:
+        alias: 计划产量(吨)
+        description: 该批次计划生产的重量，单位为吨
+        type: float
+      plant_code:
+        alias: 工厂代码
+        description: 生产所属工厂的唯一编码
+        type: string
+      plant_descrptn:
+        alias: 工厂名称
+        description: 生产所属工厂的中文名称
+        type: string
+      production_id:
+        alias: 生产记录ID
+        description: 生产产出记录的唯一标识符
+        important: 主键
+        type: string
+      production_line:
+        alias: 生产线
+        description: 具体的生产线编号或名称
+        type: string
+      record_date:
+        alias: 记录日期
+        description: 生产发生的具体日期
+        important: 用于时间维度分析
+        type: date
+      record_yearmth:
+        alias: 统计年月
+        description: 生产记录所属的年月，格式为YYYYMM
+        important: 用于月度汇总查询
+        type: string
+      scrap_qty_mt:
+        alias: 报废量(吨)
+        description: 生产过程中产生的废品重量，单位为吨
+        type: float
+      scrap_rate:
+        alias: 报废率
+        description: 报废量占总投入量的比例
+        type: float
+      workshop:
+        alias: 车间名称
+        description: 生产所属的车间部门
+        type: string
+      yield_rate:
+        alias: 良品率
+        description: 实际产出与计划产出的比率，取值范围0-1
+        type: float
+    row_granularity: 每行代表一条特定生产批次的产出记录
+  promotion:
+    alias: 促销活动明细表
+    description: 记录公司各分公司在不同渠道针对特定物料开展的促销活动及其预算与执行情况。
+    fields:
+      actual_spend:
+        alias: 实际支出金额
+        description: 该促销活动实际发生的费用支出
+        important: 用于计算预算执行率
+        type: float
+      brnch_code:
+        alias: 分公司代码
+        description: 执行促销活动的分公司唯一编码
+        important: 用于关联分公司维度表
+        type: string
+      brnch_descrptn:
+        alias: 分公司名称
+        description: 分公司的中文名称
+        important: 用于报表展示
+        type: string
+      budget_amount:
+        alias: 预算金额
+        description: 该促销活动计划投入的预算总额
+        important: 用于评估促销成本控制
+        type: float
+      channel_code:
+        alias: 渠道代码
+        description: 促销活动覆盖的销售渠道编码
+        important: 用于区分销售渠道类型
+        type: string
+      channel_descrptn:
+        alias: 渠道名称
+        description: 销售渠道的中文描述
+        important: 用于渠道维度的分析
+        type: string
+      discount_rate:
+        alias: 折扣率
+        description: 促销活动的折扣比例，如0.85表示85折
+        important: 数值范围通常在0-1之间
+        type: float
+      end_date:
+        alias: 结束日期
+        description: 促销活动的截止日期
+        important: 用于计算促销活动时长
+        type: date
+      expected_lift_pct:
+        alias: 预期销量提升率
+        description: 促销活动预期的销量增长百分比
+        important: 用于评估促销活动效果
+        type: float
+      mat_code:
+        alias: 物料代码
+        description: 参与促销活动的物料唯一编码
+        important: 用于关联产品/物料主数据
+        type: string
+      mat_name:
+        alias: 物料名称
+        description: 参与促销活动的物料名称
+        important: 用于产品维度的分析
+        type: string
+      promo_id:
+        alias: 促销活动编号
+        description: 促销活动的唯一标识符
+        important: 主键，用于唯一标识单次促销活动
+        type: string
+      promo_name:
+        alias: 促销活动名称
+        description: 促销活动的业务描述名称
+        important: 用于区分不同主题的促销活动
+        type: string
+      promo_yearmth:
+        alias: 促销年月
+        description: 促销活动所属的年月，格式为YYYYMM
+        important: 用于月度报表统计
+        type: string
+      start_date:
+        alias: 开始日期
+        description: 促销活动的起始日期
+        important: 用于时间维度的筛选
+        type: date
+    row_granularity: 每行代表一个特定促销活动在特定分公司、渠道及物料维度的执行记录。
+  quality_inspection:
+    alias: 质量检验记录表
+    description: 记录工厂生产批次的质量检验结果、缺陷统计及判定情况，用于监控产品质量水平。
+    fields:
+      batch_id:
+        alias: 批次号
+        description: 被检验产品的生产批次唯一标识
+        important: 用于追溯具体生产批次
+        type: string
+      defect_count:
+        alias: 缺陷数量
+        description: 在抽检样本中发现的缺陷产品总数
+        type: integer
+      defect_rate:
+        alias: 缺陷率
+        description: 缺陷数量占抽检样本量的比例
+        important: 核心质量指标，计算公式为：缺陷数量/抽检样本量
+        type: float
+      defect_type:
+        alias: 缺陷类型
+        description: 发现的主要缺陷类别，如异味、水分超标等
+        important: 当结果为不合格时，此字段通常有值
+        type: string
+      inspection_date:
+        alias: 检验日期
+        description: 执行质量检验的具体日期
+        important: 用于时间维度的趋势分析
+        type: date
+      inspection_id:
+        alias: 检验单号
+        description: 质量检验记录的唯一标识符
+        important: 主键，不可重复
+        type: string
+      inspection_yearmth:
+        alias: 检验年月
+        description: 检验所属的年月周期，格式为YYYYMM
+        important: 用于月度报表统计的维度字段
+        type: string
+      mat_code:
+        alias: 物料编码
+        description: 被检验产品的物料唯一编码
+        type: string
+      mat_name:
+        alias: 物料名称
+        description: 被检验产品的中文名称
+        type: string
+      plant_code:
+        alias: 工厂代码
+        description: 执行检验的工厂唯一编码
+        important: 关联工厂信息的基础维度
+        type: string
+      plant_descrptn:
+        alias: 工厂名称
+        description: 工厂的中文名称描述
+        type: string
+      result:
+        alias: 检验结果
+        description: 检验结论，分为合格与不合格
+        important: 用于筛选合格或不合格批次
+        type: string
+      sample_size:
+        alias: 抽检样本量
+        description: 本次检验抽取的样本总数量
+        type: integer
+      severity:
+        alias: 严重程度
+        description: 缺陷对产品质量影响的严重等级，分为轻微、中等、严重
+        type: string
+    row_granularity: 每行=一次产品质量检验记录
+  rolling_plan:
+    alias: 滚动计划表
+    description: 记录各事业部、分公司及渠道在不同统计周期下的物料滚动销售计划与工厂发货计划数据。
+    fields:
+      brnch_code:
+        alias: 分公司代码
+        description: 所属分公司的唯一编码。
+        type: string
+      brnch_descrptn:
+        alias: 分公司名称
+        description: 所属分公司的中文名称。
+        type: string
+      busline_code:
+        alias: 业务线代码
+        description: 所属业务线的唯一编码。
+        type: string
+      busline_descrptn:
+        alias: 业务线名称
+        description: 所属业务线的中文名称，如餐饮事业部、消费品事业部等。
+        type: string
+      chnl_typ_code:
+        alias: 渠道类型代码
+        description: 销售渠道类型的唯一编码。
+        type: string
+      chnl_typ_descrptn:
+        alias: 渠道类型名称
+        description: 销售渠道类型的中文名称，如传统流通、电商渠道等。
+        type: string
+      cstmr_code:
+        alias: 客户代码
+        description: 客户的唯一标识编码。
+        type: string
+      cstmr_name:
+        alias: 客户名称
+        description: 客户的中文名称。
+        type: string
+      cstmr_typ_code:
+        alias: 客户类型代码
+        description: 客户类型的唯一编码。
+        type: string
+      cstmr_typ_descrptn:
+        alias: 客户类型名称
+        description: 客户类型的中文名称，如KA卖场、一级经销商等。
+        type: string
+      mat_code:
+        alias: 物料代码
+        description: 物料的唯一标识编码。
+        type: string
+      mat_name:
+        alias: 物料名称
+        description: 物料的中文名称及规格描述。
+        type: string
+      mat_prodctnline_code:
+        alias: 物料生产线代码
+        description: 物料所属生产线的唯一编码。
+        type: string
+      mat_prodctnline_descrptn:
+        alias: 物料生产线名称
+        description: 物料所属生产线的中文名称。
+        type: string
+      mngmt_bu_code:
+        alias: 管理事业部代码
+        description: 所属管理事业部的唯一编码。
+        type: string
+      mngmt_bu_descrptn:
+        alias: 管理事业部名称
+        description: 所属管理事业部的中文名称。
+        type: string
+      outrpckgn_specfctn:
+        alias: 外包装规格
+        description: 物料的外包装规格描述。
+        type: string
+      plant_shipgds_plan_mt:
+        alias: 工厂发货计划数量(吨)
+        description: 工厂计划发货的数量，单位为公吨(MT)。
+        type: float
+      rgn_code:
+        alias: 区域代码
+        description: 所属销售区域的唯一编码。
+        type: string
+      rgn_descrptn:
+        alias: 区域名称
+        description: 所属销售区域的中文名称。
+        type: string
+      rllng_plan_id:
+        alias: 滚动计划ID
+        description: 滚动计划记录的唯一标识符。
+        type: string
+      rllng_planqty_mt:
+        alias: 滚动计划数量(吨)
+        description: 预估的滚动销售计划数量，单位为公吨(MT)。
+        type: float
+      sply_plant_code:
+        alias: 供应工厂代码
+        description: 负责供应该物料的工厂唯一编码。
+        type: string
+      sply_plant_descrptn:
+        alias: 供应工厂名称
+        description: 负责供应该物料的工厂中文名称。
+        type: string
+      start_yearmth:
+        alias: 计划开始年月
+        description: 滚动计划执行的起始年月。
+        type: string
+      stats_date:
+        alias: 统计日期
+        description: 数据统计的具体日期。
+        type: date
+      stats_yearmth:
+        alias: 统计年月
+        description: 数据统计所属的年月，格式为YYYYMM。
+        type: string
+    row_granularity: 每行代表一个特定统计周期、特定客户、特定物料及特定供应工厂的滚动计划明细记录。
+  sales_delivery:
+    alias: 销售交货明细表
+    description: 记录销售订单执行过程中的交货明细、物流状态、物料信息及相关财务与地理维度数据。
+    fields:
+      brnch_code:
+        alias: 分公司编码
+        description: 所属分公司代码
+        type: string
+      brnch_descrptn:
+        alias: 分公司描述
+        description: 所属分公司名称
+        type: string
+      busline_code:
+        alias: 事业部编码
+        description: 所属业务线代码
+        type: string
+      busline_descrptn:
+        alias: 事业部描述
+        description: 所属业务线名称
+        type: string
+      deliv_crt_time:
+        alias: 交货创建时间
+        description: 交货单在系统中创建的时间戳
+        type: datetime
+      deliv_distri_chnl_code:
+        alias: 分销渠道编码
+        description: 销售所使用的分销渠道代码
+        type: string
+      deliv_distri_chnl_descrptn:
+        alias: 分销渠道描述
+        description: 销售所使用的分销渠道说明
+        type: string
+      deliv_dlvry_amt:
+        alias: 交货金额
+        description: 本次交货对应的销售金额
+        type: float
+      deliv_linenum:
+        alias: 交货行号
+        description: 交货单内的明细行序号
+        type: string
+      deliv_mat_code:
+        alias: 物料编码
+        description: 交货产品的唯一物料代码
+        type: string
+      deliv_mat_name:
+        alias: 物料名称
+        description: 交货产品的名称
+        type: string
+      deliv_pgi_sts_code:
+        alias: 发货过账状态码
+        description: 发货过账（Post Goods Issue）的状态代码
+        type: string
+      deliv_pgi_sts_descrptn:
+        alias: 发货过账状态描述
+        description: 发货过账状态的详细说明
+        type: string
+      deliv_pgi_time:
+        alias: 发货过账时间
+        description: 实际完成发货过账的时间戳
+        type: datetime
+      deliv_prodctnline_code:
+        alias: 生产线编码
+        description: 产品所属生产线代码
+        type: string
+      deliv_prodctnline_descrptn:
+        alias: 生产线描述
+        description: 产品所属生产线名称
+        type: string
+      deliv_qty:
+        alias: 交货数量
+        description: 本次交货的物料数量，单位为千克
+        type: float
+      deliv_qty_mt:
+        alias: 交货数量(吨)
+        description: 以吨为单位的交货数量
+        type: float
+      deliv_qty_unit_descrptn:
+        alias: 交货数量单位
+        description: 交货数量的计量单位
+        type: string
+      deliv_retrngds_identfctn:
+        alias: 退货标识
+        description: 标识该记录是否为退货业务，有值通常表示退货
+        type: string
+      deliv_salesorgnztn_code:
+        alias: 销售组织编码
+        description: 负责该笔销售的组织机构代码
+        type: string
+      deliv_salesorgnztn_descrptn:
+        alias: 销售组织描述
+        description: 负责该笔销售的组织机构名称
+        type: string
+      deliv_shipto_code:
+        alias: 送达方编码
+        description: 实际接收货物的客户编码
+        type: string
+      deliv_shipto_name:
+        alias: 送达方名称
+        description: 实际接收货物的客户名称
+        type: string
+      deliv_soldto_code:
+        alias: 售达方编码
+        description: 负责下单的客户编码
+        type: string
+      deliv_soldto_name:
+        alias: 售达方名称
+        description: 负责下单的客户名称
+        type: string
+      deliv_sply_plant_code:
+        alias: 供应工厂编码
+        description: 负责发货的工厂代码
+        type: string
+      deliv_sply_plant_descrptn:
+        alias: 供应工厂描述
+        description: 负责发货的工厂名称
+        type: string
+      deliv_typ_descrptn:
+        alias: 交货类型描述
+        description: 交货单的业务类型，如标准销售交货
+        type: string
+      delivnum:
+        alias: 交货单号
+        description: 销售交货单的唯一标识符
+        type: string
+      dlvrgds_addr_cnty_descrptn:
+        alias: 区县
+        description: 收货地址所在区县
+        type: string
+      dlvrgds_addr_prvlvlcity_descrptn:
+        alias: 城市
+        description: 收货地址所在城市
+        type: string
+      dlvrgds_addr_prvnc_descrptn:
+        alias: 省份
+        description: 收货地址所在省份
+        type: string
+      is_external_transfer:
+        alias: 是否外部调拨
+        description: 标识是否为外部调拨业务，1为是，0为否
+        type: integer
+      logistics_cost_per_mt:
+        alias: 单位吨物流成本
+        description: 每吨货物的物流运输成本
+        type: float
+      mat_outrpckgn_specfctn:
+        alias: 外包装规格
+        description: 产品的包装规格描述
+        type: string
+      order_cstmr_typ_code:
+        alias: 客户类型编码
+        description: 客户的业务分类代码
+        type: string
+      order_cstmr_typ_descrptn:
+        alias: 客户类型描述
+        description: 客户的业务分类说明，如KA卖场、经销商等
+        type: string
+      rgn_code:
+        alias: 区域编码
+        description: 所属销售大区代码
+        type: string
+      rgn_descrptn:
+        alias: 区域描述
+        description: 所属销售大区名称
+        type: string
+      rltd_order_num:
+        alias: 关联订单号
+        description: 该交货单对应的原始销售订单号
+        type: string
+    row_granularity: 每行代表一条销售交货单的明细行记录
+  sales_order:
+    alias: 销售订单明细表
+    description: 记录公司各事业部及分公司在不同渠道下的销售订单执行情况、物料明细及交付状态。
+    fields:
+      brnch_code:
+        alias: 分公司代码
+        description: 所属分公司机构代码
+        type: string
+      brnch_descrptn:
+        alias: 分公司名称
+        description: 所属分公司的中文名称
+        type: string
+      busline_code:
+        alias: 事业部代码
+        description: 订单所属业务事业部代码
+        type: string
+      busline_descrptn:
+        alias: 事业部名称
+        description: 业务事业部的中文名称
+        type: string
+      mat_outrpckgn_specfctn:
+        alias: 包装规格
+        description: 产品的外包装规格描述
+        type: string
+      order_chnl:
+        alias: 订单渠道代码
+        description: 订单业务渠道分类代码
+        type: string
+      order_chnl_descrptn:
+        alias: 订单渠道名称
+        description: 订单业务渠道的中文描述
+        type: string
+      order_crt_date:
+        alias: 订单创建日期
+        description: 订单在系统中生成的日期
+        type: date
+      order_cstmr_typ_code:
+        alias: 客户类型代码
+        description: 客户的业务属性分类代码
+        type: string
+      order_cstmr_typ_descrptn:
+        alias: 客户类型名称
+        description: 客户类型的中文描述
+        type: string
+      order_distri_chnl_code:
+        alias: 分销渠道代码
+        description: 订单所属的分销渠道分类代码
+        type: string
+      order_distri_chnl_descrptn:
+        alias: 分销渠道名称
+        description: 分销渠道的中文描述
+        type: string
+      order_dlvry_sts_code:
+        alias: 交货状态代码
+        description: 订单的物流交货进度代码
+        type: string
+      order_dlvry_sts_descrptn:
+        alias: 交货状态名称
+        description: 订单交货进度的中文描述
+        type: string
+      order_mat_code:
+        alias: 物料代码
+        description: 订单中销售产品的唯一物料编码
+        type: string
+      order_mat_name:
+        alias: 物料名称
+        description: 销售产品的名称及规格
+        type: string
+      order_net_amt:
+        alias: 订单净金额
+        description: 订单的实际成交净金额
+        type: float
+      order_prodctnline_code:
+        alias: 产品线代码
+        description: 订单所涉及的产品线分类代码
+        type: string
+      order_prodctnline_descrptn:
+        alias: 产品线名称
+        description: 产品线的中文描述
+        type: string
+      order_pymnt_descrptn:
+        alias: 付款状态描述
+        description: 订单财务付款状态的中文说明
+        type: string
+      order_pymnt_sts:
+        alias: 付款状态代码
+        description: 订单的财务付款状态
+        type: string
+      order_qty:
+        alias: 订单数量
+        description: 订单的订购数量，单位为千克
+        type: float
+      order_qty_mt:
+        alias: 订单数量(吨)
+        description: 订单数量换算为吨后的数值
+        type: float
+      order_qty_unit_descrptn:
+        alias: 数量单位
+        description: 订单数量的计量单位
+        type: string
+      order_salesorg_code:
+        alias: 销售组织代码
+        description: 负责该订单的销售组织机构代码
+        type: string
+      order_salesorg_descrptn:
+        alias: 销售组织名称
+        description: 销售组织机构的中文名称
+        type: string
+      order_shipto_code:
+        alias: 送达方代码
+        description: 货物实际送达的客户代码
+        type: string
+      order_shipto_name:
+        alias: 送达方名称
+        description: 货物实际送达的客户名称
+        type: string
+      order_soldto_code:
+        alias: 售达方代码
+        description: 下单购买的客户代码
+        type: string
+      order_soldto_name:
+        alias: 售达方名称
+        description: 下单购买的客户名称
+        type: string
+      order_sply_plant_code:
+        alias: 供应工厂代码
+        description: 负责发货的生产工厂代码
+        type: string
+      order_sply_plant_descrptn:
+        alias: 供应工厂名称
+        description: 负责发货的生产工厂名称
+        type: string
+      order_sts_code:
+        alias: 订单状态代码
+        description: 订单的当前处理状态代码（如C:已完成, A:未完成）
+        type: string
+      order_sts_descrptn:
+        alias: 订单状态名称
+        description: 订单状态的中文描述
+        type: string
+      order_typ_descrptn:
+        alias: 订单类型
+        description: 销售订单的业务类型描述
+        type: string
+      order_vchr_date:
+        alias: 订单凭证日期
+        description: 订单业务凭证生效日期
+        type: date
+      order_vldfrm:
+        alias: 有效期起始日期
+        description: 订单条款生效的起始日期
+        type: date
+      order_vldto:
+        alias: 有效期截止日期
+        description: 订单条款失效的日期
+        type: date
+      rgn_code:
+        alias: 区域代码
+        description: 所属销售大区代码
+        type: string
+      rgn_descrptn:
+        alias: 区域名称
+        description: 所属销售大区的中文名称
+        type: string
+      sales_order_linenum:
+        alias: 订单行号
+        description: 订单内部的行项目编号
+        type: string
+      sales_ordernum:
+        alias: 销售订单号
+        description: 销售订单的唯一标识编号
+        type: string
+    row_granularity: 每行代表一条销售订单的明细行记录

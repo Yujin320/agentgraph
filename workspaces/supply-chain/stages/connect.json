@@ -1,0 +1,54 @@
+{
+  "status": "success",
+  "data": {
+    "db_url": "sqlite:////home/ubuntu/dataagent-jly/kly_poc.db",
+    "db_type": "sqlite",
+    "table_count": 10,
+    "total_rows": 24520,
+    "tables": [
+      {
+        "name": "customer_complaint",
+        "row_count": 300
+      },
+      {
+        "name": "inventory",
+        "row_count": 1620
+      },
+      {
+        "name": "overtime_hours",
+        "row_count": 5504
+      },
+      {
+        "name": "procurement",
+        "row_count": 394
+      },
+      {
+        "name": "production_output",
+        "row_count": 2584
+      },
+      {
+        "name": "promotion",
+        "row_count": 91
+      },
+      {
+        "name": "quality_inspection",
+        "row_count": 2584
+      },
+      {
+        "name": "rolling_plan",
+        "row_count": 793
+      },
+      {
+        "name": "sales_delivery",
+        "row_count": 4925
+      },
+      {
+        "name": "sales_order",
+        "row_count": 5725
+      }
+    ]
+  },
+  "artifacts": [],
+  "message": "连接成功: sqlite, 10 张表, 24,520 行数据",
+  "errors": []
+}

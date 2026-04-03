@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from backend.config import settings
-from backend.routers import chat, workspace, explorer
+from backend.routers import chat, workspace, explorer, pipeline as pipeline_router
 
 BASE_PATH = settings.base_path.rstrip("/")
 
@@ -107,6 +107,7 @@ async def auth_middleware(request: Request, call_next):
 app.include_router(chat.router, prefix=f"{BASE_PATH}/api")
 app.include_router(workspace.router, prefix=f"{BASE_PATH}/api")
 app.include_router(explorer.router, prefix=f"{BASE_PATH}/api")
+app.include_router(pipeline_router.router, prefix=f"{BASE_PATH}/api")
 
 
 @app.get(f"{BASE_PATH}/api/health", tags=["system"])

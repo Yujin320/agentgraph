@@ -1,0 +1,1264 @@
+{
+  "status": "success",
+  "data": {
+    "tables": {
+      "customer_complaint": {
+        "alias": "客户投诉记录表",
+        "description": "记录公司各分公司客户针对产品及服务提出的投诉详情及处理进度。",
+        "row_granularity": "每行代表一条客户投诉记录",
+        "fields": {
+          "complaint_id": {
+            "alias": "投诉编号",
+            "type": "string",
+            "description": "投诉记录的唯一标识符",
+            "important": "主键"
+          },
+          "complaint_date": {
+            "alias": "投诉日期",
+            "type": "date",
+            "description": "客户发起投诉的具体日期"
+          },
+          "complaint_yearmth": {
+            "alias": "投诉年月",
+            "type": "string",
+            "description": "投诉发生的年月，格式为YYYYMM，用于按月统计分析",
+            "important": "维度字段"
+          },
+          "brnch_code": {
+            "alias": "分公司代码",
+            "type": "string",
+            "description": "所属分公司的唯一编码"
+          },
+          "brnch_descrptn": {
+            "alias": "分公司名称",
+            "type": "string",
+            "description": "分公司的中文描述名称"
+          },
+          "customer_code": {
+            "alias": "客户代码",
+            "type": "string",
+            "description": "投诉客户的唯一编码"
+          },
+          "customer_name": {
+            "alias": "客户名称",
+            "type": "string",
+            "description": "投诉客户的单位名称"
+          },
+          "mat_code": {
+            "alias": "物料代码",
+            "type": "string",
+            "description": "投诉涉及的产品物料编码"
+          },
+          "mat_name": {
+            "alias": "物料名称",
+            "type": "string",
+            "description": "投诉涉及的产品名称"
+          },
+          "complaint_type": {
+            "alias": "投诉类型",
+            "type": "string",
+            "description": "投诉的具体原因分类，如交期延迟、产品质量等"
+          },
+          "severity": {
+            "alias": "严重程度",
+            "type": "string",
+            "description": "投诉的紧急或严重等级，分为一般、重要、紧急"
+          },
+          "related_batch_id": {
+            "alias": "关联批次号",
+            "type": "string",
+            "description": "投诉产品对应的生产或物流批次编号",
+            "important": "部分记录可能为空"
+          },
+          "resolution": {
+            "alias": "处理方式",
+            "type": "string",
+            "description": "针对该投诉采取的解决方案"
+          },
+          "resolution_days": {
+            "alias": "处理时长",
+            "type": "integer",
+            "description": "从投诉发起至处理完成所经过的天数"
+          },
+          "is_resolved": {
+            "alias": "是否已解决",
+            "type": "integer",
+            "description": "投诉处理状态，1表示已解决，0表示未解决",
+            "important": "布尔标识，0/1取值"
+          }
+        }
+      },
+      "inventory": {
+        "alias": "工厂库存快照表",
+        "description": "记录各工厂物料在特定日期的库存水平、进出库情况及供应状态，用于监控库存健康度。",
+        "row_granularity": "每行=某工厂某物料在特定日期的库存快照记录",
+        "fields": {
+          "inventory_id": {
+            "alias": "库存记录ID",
+            "type": "string",
+            "description": "库存记录的唯一标识符",
+            "important": "主键"
+          },
+          "snapshot_date": {
+            "alias": "快照日期",
+            "type": "date",
+            "description": "库存数据统计的具体日期",
+            "important": "用于时间序列分析"
+          },
+          "snapshot_yearmth": {
+            "alias": "快照年月",
+            "type": "string",
+            "description": "库存数据统计的年月维度，格式为YYYYMM",
+            "important": "用于月度汇总统计"
+          },
+          "plant_code": {
+            "alias": "工厂代码",
+            "type": "string",
+            "description": "生产工厂的唯一编码",
+            "important": "关联工厂维度"
+          },
+          "plant_descrptn": {
+            "alias": "工厂名称",
+            "type": "string",
+            "description": "工厂的中文描述名称"
+          },
+          "mat_code": {
+            "alias": "物料代码",
+            "type": "string",
+            "description": "库存物料的唯一编码",
+            "important": "关联物料主数据"
+          },
+          "mat_name": {
+            "alias": "物料名称",
+            "type": "string",
+            "description": "库存物料的中文名称"
+          },
+          "stock_qty_mt": {
+            "alias": "库存数量(吨)",
+            "type": "float",
+            "description": "当前库存的物理重量，单位为公吨(MT)"
+          },
+          "safety_stock_mt": {
+            "alias": "安全库存(吨)",
+            "type": "float",
+            "description": "设定的最低安全库存阈值，单位为公吨(MT)",
+            "important": "用于判断库存是否预警"
+          },
+          "inbound_qty_mt": {
+            "alias": "入库数量(吨)",
+            "type": "float",
+            "description": "当日或统计周期内的入库总量，单位为公吨(MT)"
+          },
+          "outbound_qty_mt": {
+            "alias": "出库数量(吨)",
+            "type": "float",
+            "description": "当日或统计周期内的出库总量，单位为公吨(MT)"
+          },
+          "stock_status": {
+            "alias": "库存状态",
+            "type": "string",
+            "description": "库存健康状态，如正常或低于安全库存",
+            "important": "可作为异常库存筛选条件"
+          },
+          "days_of_supply": {
+            "alias": "供应天数",
+            "type": "float",
+            "description": "当前库存可支撑的预计消耗天数",
+            "important": "反映库存周转压力"
+          }
+        }
+      },
+      "overtime_hours": {
+        "alias": "工厂加班工时记录表",
+        "description": "记录各工厂车间生产线在不同班次下的计划工时、实际工时及加班工时情况，用于分析加班成本与原因。",
+        "row_granularity": "每行代表某工厂某车间某生产线在特定日期及班次的加班工时统计记录",
+        "fields": {
+          "record_id": {
+            "alias": "记录唯一标识",
+            "type": "integer",
+            "description": "记录的主键ID，唯一标识每一条加班数据",
+            "important": "系统自动生成，不可重复"
+          },
+          "record_date": {
+            "alias": "记录日期",
+            "type": "date",
+            "description": "发生加班的实际日期",
+            "important": "用于按日进行时间维度的统计分析"
+          },
+          "record_yearmth": {
+            "alias": "年月维度",
+            "type": "string",
+            "description": "记录所属的年月，格式为YYYYMM",
+            "important": "用于按月进行汇总统计"
+          },
+          "plant_code": {
+            "alias": "工厂代码",
+            "type": "string",
+            "description": "工厂的唯一编码标识",
+            "important": "关联工厂信息的基础维度"
+          },
+          "plant_descrptn": {
+            "alias": "工厂名称",
+            "type": "string",
+            "description": "工厂的中文名称",
+            "important": "用于报表展示"
+          },
+          "workshop": {
+            "alias": "车间名称",
+            "type": "string",
+            "description": "所属生产车间，如精炼车间、灌装车间等",
+            "important": "用于车间维度的绩效分析"
+          },
+          "production_line": {
+            "alias": "生产线",
+            "type": "string",
+            "description": "具体的生产线编号或名称",
+            "important": "用于生产线维度的效率分析"
+          },
+          "shift_type": {
+            "alias": "班次类型",
+            "type": "string",
+            "description": "工作班次，包括白班、中班、夜班",
+            "important": "用于分析不同班次的加班分布"
+          },
+          "scheduled_hours": {
+            "alias": "计划工时",
+            "type": "float",
+            "description": "该班次原定的标准工作时长（小时）",
+            "important": "作为计算加班工时的基准"
+          },
+          "actual_hours": {
+            "alias": "实际工时",
+            "type": "float",
+            "description": "该班次实际投入的总工作时长（小时）",
+            "important": "包含正常工时与加班工时"
+          },
+          "overtime_hours": {
+            "alias": "加班工时",
+            "type": "float",
+            "description": "实际工时超出计划工时的部分（小时）",
+            "important": "核心度量指标，计算公式为：实际工时 - 计划工时"
+          },
+          "worker_count": {
+            "alias": "作业人数",
+            "type": "integer",
+            "description": "该班次参与作业的员工总数",
+            "important": "用于计算人均加班工时或人均加班成本"
+          },
+          "overtime_reason": {
+            "alias": "加班原因",
+            "type": "string",
+            "description": "导致加班的具体业务原因，如设备故障、紧急订单等",
+            "important": "用于加班原因的归因分析"
+          },
+          "overtime_cost": {
+            "alias": "加班成本",
+            "type": "float",
+            "description": "该班次产生的加班费用总额",
+            "important": "核心财务指标，用于成本控制分析"
+          }
+        }
+      },
+      "procurement": {
+        "alias": "采购订单明细表",
+        "description": "记录企业原材料采购订单的执行情况、到货进度及供应商供货表现。",
+        "row_granularity": "每行代表一条采购订单明细记录",
+        "fields": {
+          "po_id": {
+            "alias": "采购订单编号",
+            "type": "string",
+            "description": "采购订单的唯一标识符",
+            "important": "主键，用于唯一标识单笔采购业务"
+          },
+          "po_date": {
+            "alias": "下单日期",
+            "type": "date",
+            "description": "采购订单正式创建的日期"
+          },
+          "po_yearmth": {
+            "alias": "采购年月",
+            "type": "string",
+            "description": "采购订单所属的年月维度，格式为YYYYMM",
+            "important": "常用于按月度进行采购统计分析"
+          },
+          "supplier_code": {
+            "alias": "供应商编码",
+            "type": "string",
+            "description": "供应商的唯一识别代码"
+          },
+          "supplier_name": {
+            "alias": "供应商名称",
+            "type": "string",
+            "description": "提供原材料的供应商全称"
+          },
+          "raw_material_code": {
+            "alias": "原材料编码",
+            "type": "string",
+            "description": "采购原材料的唯一识别代码"
+          },
+          "raw_material_name": {
+            "alias": "原材料名称",
+            "type": "string",
+            "description": "采购原材料的品名描述"
+          },
+          "target_plant_code": {
+            "alias": "目标工厂编码",
+            "type": "string",
+            "description": "收货工厂的唯一识别代码"
+          },
+          "target_plant_descrptn": {
+            "alias": "目标工厂名称",
+            "type": "string",
+            "description": "接收原材料的工厂名称"
+          },
+          "order_qty_mt": {
+            "alias": "订单数量(吨)",
+            "type": "float",
+            "description": "采购订单中约定的采购重量，单位为公吨"
+          },
+          "received_qty_mt": {
+            "alias": "实收数量(吨)",
+            "type": "float",
+            "description": "实际入库的原材料重量，单位为公吨"
+          },
+          "unit_price": {
+            "alias": "单价",
+            "type": "float",
+            "description": "原材料的采购单价"
+          },
+          "total_amount": {
+            "alias": "订单总金额",
+            "type": "float",
+            "description": "该笔采购订单的总金额，通常为单价乘以订单数量"
+          },
+          "expected_arrival": {
+            "alias": "预计到货日期",
+            "type": "date",
+            "description": "订单约定的原材料送达日期"
+          },
+          "actual_arrival": {
+            "alias": "实际到货日期",
+            "type": "date",
+            "description": "原材料实际送达工厂的日期"
+          },
+          "delay_days": {
+            "alias": "延迟天数",
+            "type": "integer",
+            "description": "实际到货日期与预计到货日期的差值，0表示未延迟"
+          },
+          "status": {
+            "alias": "订单状态",
+            "type": "string",
+            "description": "订单当前的执行状态，如已到货、在途、延迟"
+          }
+        }
+      },
+      "production_output": {
+        "alias": "生产产出记录表",
+        "description": "记录工厂各生产线每日的物料生产计划、实际产出、良率及停机时间等生产执行数据。",
+        "row_granularity": "每行代表一条特定生产批次的产出记录",
+        "fields": {
+          "production_id": {
+            "alias": "生产记录ID",
+            "type": "string",
+            "description": "生产产出记录的唯一标识符",
+            "important": "主键"
+          },
+          "record_date": {
+            "alias": "记录日期",
+            "type": "date",
+            "description": "生产发生的具体日期",
+            "important": "用于时间维度分析"
+          },
+          "record_yearmth": {
+            "alias": "统计年月",
+            "type": "string",
+            "description": "生产记录所属的年月，格式为YYYYMM",
+            "important": "用于月度汇总查询"
+          },
+          "plant_code": {
+            "alias": "工厂代码",
+            "type": "string",
+            "description": "生产所属工厂的唯一编码"
+          },
+          "plant_descrptn": {
+            "alias": "工厂名称",
+            "type": "string",
+            "description": "生产所属工厂的中文名称"
+          },
+          "workshop": {
+            "alias": "车间名称",
+            "type": "string",
+            "description": "生产所属的车间部门"
+          },
+          "production_line": {
+            "alias": "生产线",
+            "type": "string",
+            "description": "具体的生产线编号或名称"
+          },
+          "mat_code": {
+            "alias": "物料编码",
+            "type": "string",
+            "description": "生产产品的物料唯一编码"
+          },
+          "mat_name": {
+            "alias": "物料名称",
+            "type": "string",
+            "description": "生产产品的中文名称及规格"
+          },
+          "batch_id": {
+            "alias": "生产批次号",
+            "type": "string",
+            "description": "生产过程中的唯一批次标识"
+          },
+          "planned_qty_mt": {
+            "alias": "计划产量(吨)",
+            "type": "float",
+            "description": "该批次计划生产的重量，单位为吨"
+          },
+          "actual_qty_mt": {
+            "alias": "实际产量(吨)",
+            "type": "float",
+            "description": "该批次实际产出的合格品重量，单位为吨"
+          },
+          "yield_rate": {
+            "alias": "良品率",
+            "type": "float",
+            "description": "实际产出与计划产出的比率，取值范围0-1"
+          },
+          "scrap_qty_mt": {
+            "alias": "报废量(吨)",
+            "type": "float",
+            "description": "生产过程中产生的废品重量，单位为吨"
+          },
+          "scrap_rate": {
+            "alias": "报废率",
+            "type": "float",
+            "description": "报废量占总投入量的比例"
+          },
+          "downtime_hours": {
+            "alias": "停机时间(小时)",
+            "type": "float",
+            "description": "该批次生产期间设备停机或故障的总时长"
+          }
+        }
+      },
+      "promotion": {
+        "alias": "促销活动明细表",
+        "description": "记录公司各分公司在不同渠道针对特定物料开展的促销活动及其预算与执行情况。",
+        "row_granularity": "每行代表一个特定促销活动在特定分公司、渠道及物料维度的执行记录。",
+        "fields": {
+          "promo_id": {
+            "alias": "促销活动编号",
+            "type": "string",
+            "description": "促销活动的唯一标识符",
+            "important": "主键，用于唯一标识单次促销活动"
+          },
+          "promo_name": {
+            "alias": "促销活动名称",
+            "type": "string",
+            "description": "促销活动的业务描述名称",
+            "important": "用于区分不同主题的促销活动"
+          },
+          "start_date": {
+            "alias": "开始日期",
+            "type": "date",
+            "description": "促销活动的起始日期",
+            "important": "用于时间维度的筛选"
+          },
+          "end_date": {
+            "alias": "结束日期",
+            "type": "date",
+            "description": "促销活动的截止日期",
+            "important": "用于计算促销活动时长"
+          },
+          "promo_yearmth": {
+            "alias": "促销年月",
+            "type": "string",
+            "description": "促销活动所属的年月，格式为YYYYMM",
+            "important": "用于月度报表统计"
+          },
+          "brnch_code": {
+            "alias": "分公司代码",
+            "type": "string",
+            "description": "执行促销活动的分公司唯一编码",
+            "important": "用于关联分公司维度表"
+          },
+          "brnch_descrptn": {
+            "alias": "分公司名称",
+            "type": "string",
+            "description": "分公司的中文名称",
+            "important": "用于报表展示"
+          },
+          "channel_code": {
+            "alias": "渠道代码",
+            "type": "string",
+            "description": "促销活动覆盖的销售渠道编码",
+            "important": "用于区分销售渠道类型"
+          },
+          "channel_descrptn": {
+            "alias": "渠道名称",
+            "type": "string",
+            "description": "销售渠道的中文描述",
+            "important": "用于渠道维度的分析"
+          },
+          "mat_code": {
+            "alias": "物料代码",
+            "type": "string",
+            "description": "参与促销活动的物料唯一编码",
+            "important": "用于关联产品/物料主数据"
+          },
+          "mat_name": {
+            "alias": "物料名称",
+            "type": "string",
+            "description": "参与促销活动的物料名称",
+            "important": "用于产品维度的分析"
+          },
+          "discount_rate": {
+            "alias": "折扣率",
+            "type": "float",
+            "description": "促销活动的折扣比例，如0.85表示85折",
+            "important": "数值范围通常在0-1之间"
+          },
+          "budget_amount": {
+            "alias": "预算金额",
+            "type": "float",
+            "description": "该促销活动计划投入的预算总额",
+            "important": "用于评估促销成本控制"
+          },
+          "actual_spend": {
+            "alias": "实际支出金额",
+            "type": "float",
+            "description": "该促销活动实际发生的费用支出",
+            "important": "用于计算预算执行率"
+          },
+          "expected_lift_pct": {
+            "alias": "预期销量提升率",
+            "type": "float",
+            "description": "促销活动预期的销量增长百分比",
+            "important": "用于评估促销活动效果"
+          }
+        }
+      },
+      "quality_inspection": {
+        "alias": "质量检验记录表",
+        "description": "记录工厂生产批次的质量检验结果、缺陷统计及判定情况，用于监控产品质量水平。",
+        "row_granularity": "每行=一次产品质量检验记录",
+        "fields": {
+          "inspection_id": {
+            "alias": "检验单号",
+            "type": "string",
+            "description": "质量检验记录的唯一标识符",
+            "important": "主键，不可重复"
+          },
+          "inspection_date": {
+            "alias": "检验日期",
+            "type": "date",
+            "description": "执行质量检验的具体日期",
+            "important": "用于时间维度的趋势分析"
+          },
+          "inspection_yearmth": {
+            "alias": "检验年月",
+            "type": "string",
+            "description": "检验所属的年月周期，格式为YYYYMM",
+            "important": "用于月度报表统计的维度字段"
+          },
+          "plant_code": {
+            "alias": "工厂代码",
+            "type": "string",
+            "description": "执行检验的工厂唯一编码",
+            "important": "关联工厂信息的基础维度"
+          },
+          "plant_descrptn": {
+            "alias": "工厂名称",
+            "type": "string",
+            "description": "工厂的中文名称描述"
+          },
+          "batch_id": {
+            "alias": "批次号",
+            "type": "string",
+            "description": "被检验产品的生产批次唯一标识",
+            "important": "用于追溯具体生产批次"
+          },
+          "mat_code": {
+            "alias": "物料编码",
+            "type": "string",
+            "description": "被检验产品的物料唯一编码"
+          },
+          "mat_name": {
+            "alias": "物料名称",
+            "type": "string",
+            "description": "被检验产品的中文名称"
+          },
+          "sample_size": {
+            "alias": "抽检样本量",
+            "type": "integer",
+            "description": "本次检验抽取的样本总数量"
+          },
+          "defect_count": {
+            "alias": "缺陷数量",
+            "type": "integer",
+            "description": "在抽检样本中发现的缺陷产品总数"
+          },
+          "defect_rate": {
+            "alias": "缺陷率",
+            "type": "float",
+            "description": "缺陷数量占抽检样本量的比例",
+            "important": "核心质量指标，计算公式为：缺陷数量/抽检样本量"
+          },
+          "result": {
+            "alias": "检验结果",
+            "type": "string",
+            "description": "检验结论，分为合格与不合格",
+            "important": "用于筛选合格或不合格批次"
+          },
+          "defect_type": {
+            "alias": "缺陷类型",
+            "type": "string",
+            "description": "发现的主要缺陷类别，如异味、水分超标等",
+            "important": "当结果为不合格时，此字段通常有值"
+          },
+          "severity": {
+            "alias": "严重程度",
+            "type": "string",
+            "description": "缺陷对产品质量影响的严重等级，分为轻微、中等、严重"
+          }
+        }
+      },
+      "rolling_plan": {
+        "alias": "滚动计划表",
+        "description": "记录各事业部、分公司及渠道在不同统计周期下的物料滚动销售计划与工厂发货计划数据。",
+        "row_granularity": "每行代表一个特定统计周期、特定客户、特定物料及特定供应工厂的滚动计划明细记录。",
+        "fields": {
+          "rllng_plan_id": {
+            "alias": "滚动计划ID",
+            "type": "string",
+            "description": "滚动计划记录的唯一标识符。"
+          },
+          "stats_yearmth": {
+            "alias": "统计年月",
+            "type": "string",
+            "description": "数据统计所属的年月，格式为YYYYMM。"
+          },
+          "stats_date": {
+            "alias": "统计日期",
+            "type": "date",
+            "description": "数据统计的具体日期。"
+          },
+          "start_yearmth": {
+            "alias": "计划开始年月",
+            "type": "string",
+            "description": "滚动计划执行的起始年月。"
+          },
+          "mngmt_bu_code": {
+            "alias": "管理事业部代码",
+            "type": "string",
+            "description": "所属管理事业部的唯一编码。"
+          },
+          "mngmt_bu_descrptn": {
+            "alias": "管理事业部名称",
+            "type": "string",
+            "description": "所属管理事业部的中文名称。"
+          },
+          "busline_code": {
+            "alias": "业务线代码",
+            "type": "string",
+            "description": "所属业务线的唯一编码。"
+          },
+          "busline_descrptn": {
+            "alias": "业务线名称",
+            "type": "string",
+            "description": "所属业务线的中文名称，如餐饮事业部、消费品事业部等。"
+          },
+          "brnch_code": {
+            "alias": "分公司代码",
+            "type": "string",
+            "description": "所属分公司的唯一编码。"
+          },
+          "brnch_descrptn": {
+            "alias": "分公司名称",
+            "type": "string",
+            "description": "所属分公司的中文名称。"
+          },
+          "rgn_code": {
+            "alias": "区域代码",
+            "type": "string",
+            "description": "所属销售区域的唯一编码。"
+          },
+          "rgn_descrptn": {
+            "alias": "区域名称",
+            "type": "string",
+            "description": "所属销售区域的中文名称。"
+          },
+          "chnl_typ_code": {
+            "alias": "渠道类型代码",
+            "type": "string",
+            "description": "销售渠道类型的唯一编码。"
+          },
+          "chnl_typ_descrptn": {
+            "alias": "渠道类型名称",
+            "type": "string",
+            "description": "销售渠道类型的中文名称，如传统流通、电商渠道等。"
+          },
+          "cstmr_code": {
+            "alias": "客户代码",
+            "type": "string",
+            "description": "客户的唯一标识编码。"
+          },
+          "cstmr_name": {
+            "alias": "客户名称",
+            "type": "string",
+            "description": "客户的中文名称。"
+          },
+          "cstmr_typ_code": {
+            "alias": "客户类型代码",
+            "type": "string",
+            "description": "客户类型的唯一编码。"
+          },
+          "cstmr_typ_descrptn": {
+            "alias": "客户类型名称",
+            "type": "string",
+            "description": "客户类型的中文名称，如KA卖场、一级经销商等。"
+          },
+          "mat_code": {
+            "alias": "物料代码",
+            "type": "string",
+            "description": "物料的唯一标识编码。"
+          },
+          "mat_name": {
+            "alias": "物料名称",
+            "type": "string",
+            "description": "物料的中文名称及规格描述。"
+          },
+          "mat_prodctnline_code": {
+            "alias": "物料生产线代码",
+            "type": "string",
+            "description": "物料所属生产线的唯一编码。"
+          },
+          "mat_prodctnline_descrptn": {
+            "alias": "物料生产线名称",
+            "type": "string",
+            "description": "物料所属生产线的中文名称。"
+          },
+          "outrpckgn_specfctn": {
+            "alias": "外包装规格",
+            "type": "string",
+            "description": "物料的外包装规格描述。"
+          },
+          "sply_plant_code": {
+            "alias": "供应工厂代码",
+            "type": "string",
+            "description": "负责供应该物料的工厂唯一编码。"
+          },
+          "sply_plant_descrptn": {
+            "alias": "供应工厂名称",
+            "type": "string",
+            "description": "负责供应该物料的工厂中文名称。"
+          },
+          "rllng_planqty_mt": {
+            "alias": "滚动计划数量(吨)",
+            "type": "float",
+            "description": "预估的滚动销售计划数量，单位为公吨(MT)。"
+          },
+          "plant_shipgds_plan_mt": {
+            "alias": "工厂发货计划数量(吨)",
+            "type": "float",
+            "description": "工厂计划发货的数量，单位为公吨(MT)。"
+          }
+        }
+      },
+      "sales_delivery": {
+        "alias": "销售交货明细表",
+        "description": "记录销售订单执行过程中的交货明细、物流状态、物料信息及相关财务与地理维度数据。",
+        "row_granularity": "每行代表一条销售交货单的明细行记录",
+        "fields": {
+          "delivnum": {
+            "alias": "交货单号",
+            "type": "string",
+            "description": "销售交货单的唯一标识符"
+          },
+          "deliv_linenum": {
+            "alias": "交货行号",
+            "type": "string",
+            "description": "交货单内的明细行序号"
+          },
+          "deliv_crt_time": {
+            "alias": "交货创建时间",
+            "type": "datetime",
+            "description": "交货单在系统中创建的时间戳"
+          },
+          "deliv_typ_descrptn": {
+            "alias": "交货类型描述",
+            "type": "string",
+            "description": "交货单的业务类型，如标准销售交货"
+          },
+          "deliv_retrngds_identfctn": {
+            "alias": "退货标识",
+            "type": "string",
+            "description": "标识该记录是否为退货业务，有值通常表示退货"
+          },
+          "deliv_pgi_sts_code": {
+            "alias": "发货过账状态码",
+            "type": "string",
+            "description": "发货过账（Post Goods Issue）的状态代码"
+          },
+          "deliv_pgi_sts_descrptn": {
+            "alias": "发货过账状态描述",
+            "type": "string",
+            "description": "发货过账状态的详细说明"
+          },
+          "deliv_pgi_time": {
+            "alias": "发货过账时间",
+            "type": "datetime",
+            "description": "实际完成发货过账的时间戳"
+          },
+          "deliv_qty": {
+            "alias": "交货数量",
+            "type": "float",
+            "description": "本次交货的物料数量，单位为千克"
+          },
+          "deliv_qty_unit_descrptn": {
+            "alias": "交货数量单位",
+            "type": "string",
+            "description": "交货数量的计量单位"
+          },
+          "deliv_qty_mt": {
+            "alias": "交货数量(吨)",
+            "type": "float",
+            "description": "以吨为单位的交货数量"
+          },
+          "deliv_dlvry_amt": {
+            "alias": "交货金额",
+            "type": "float",
+            "description": "本次交货对应的销售金额"
+          },
+          "deliv_soldto_code": {
+            "alias": "售达方编码",
+            "type": "string",
+            "description": "负责下单的客户编码"
+          },
+          "deliv_soldto_name": {
+            "alias": "售达方名称",
+            "type": "string",
+            "description": "负责下单的客户名称"
+          },
+          "deliv_shipto_code": {
+            "alias": "送达方编码",
+            "type": "string",
+            "description": "实际接收货物的客户编码"
+          },
+          "deliv_shipto_name": {
+            "alias": "送达方名称",
+            "type": "string",
+            "description": "实际接收货物的客户名称"
+          },
+          "order_cstmr_typ_code": {
+            "alias": "客户类型编码",
+            "type": "string",
+            "description": "客户的业务分类代码"
+          },
+          "order_cstmr_typ_descrptn": {
+            "alias": "客户类型描述",
+            "type": "string",
+            "description": "客户的业务分类说明，如KA卖场、经销商等"
+          },
+          "deliv_mat_code": {
+            "alias": "物料编码",
+            "type": "string",
+            "description": "交货产品的唯一物料代码"
+          },
+          "deliv_mat_name": {
+            "alias": "物料名称",
+            "type": "string",
+            "description": "交货产品的名称"
+          },
+          "mat_outrpckgn_specfctn": {
+            "alias": "外包装规格",
+            "type": "string",
+            "description": "产品的包装规格描述"
+          },
+          "deliv_salesorgnztn_code": {
+            "alias": "销售组织编码",
+            "type": "string",
+            "description": "负责该笔销售的组织机构代码"
+          },
+          "deliv_salesorgnztn_descrptn": {
+            "alias": "销售组织描述",
+            "type": "string",
+            "description": "负责该笔销售的组织机构名称"
+          },
+          "deliv_distri_chnl_code": {
+            "alias": "分销渠道编码",
+            "type": "string",
+            "description": "销售所使用的分销渠道代码"
+          },
+          "deliv_distri_chnl_descrptn": {
+            "alias": "分销渠道描述",
+            "type": "string",
+            "description": "销售所使用的分销渠道说明"
+          },
+          "deliv_prodctnline_code": {
+            "alias": "生产线编码",
+            "type": "string",
+            "description": "产品所属生产线代码"
+          },
+          "deliv_prodctnline_descrptn": {
+            "alias": "生产线描述",
+            "type": "string",
+            "description": "产品所属生产线名称"
+          },
+          "busline_code": {
+            "alias": "事业部编码",
+            "type": "string",
+            "description": "所属业务线代码"
+          },
+          "busline_descrptn": {
+            "alias": "事业部描述",
+            "type": "string",
+            "description": "所属业务线名称"
+          },
+          "deliv_sply_plant_code": {
+            "alias": "供应工厂编码",
+            "type": "string",
+            "description": "负责发货的工厂代码"
+          },
+          "deliv_sply_plant_descrptn": {
+            "alias": "供应工厂描述",
+            "type": "string",
+            "description": "负责发货的工厂名称"
+          },
+          "brnch_code": {
+            "alias": "分公司编码",
+            "type": "string",
+            "description": "所属分公司代码"
+          },
+          "brnch_descrptn": {
+            "alias": "分公司描述",
+            "type": "string",
+            "description": "所属分公司名称"
+          },
+          "rgn_code": {
+            "alias": "区域编码",
+            "type": "string",
+            "description": "所属销售大区代码"
+          },
+          "rgn_descrptn": {
+            "alias": "区域描述",
+            "type": "string",
+            "description": "所属销售大区名称"
+          },
+          "dlvrgds_addr_prvnc_descrptn": {
+            "alias": "省份",
+            "type": "string",
+            "description": "收货地址所在省份"
+          },
+          "dlvrgds_addr_prvlvlcity_descrptn": {
+            "alias": "城市",
+            "type": "string",
+            "description": "收货地址所在城市"
+          },
+          "dlvrgds_addr_cnty_descrptn": {
+            "alias": "区县",
+            "type": "string",
+            "description": "收货地址所在区县"
+          },
+          "rltd_order_num": {
+            "alias": "关联订单号",
+            "type": "string",
+            "description": "该交货单对应的原始销售订单号"
+          },
+          "is_external_transfer": {
+            "alias": "是否外部调拨",
+            "type": "integer",
+            "description": "标识是否为外部调拨业务，1为是，0为否"
+          },
+          "logistics_cost_per_mt": {
+            "alias": "单位吨物流成本",
+            "type": "float",
+            "description": "每吨货物的物流运输成本"
+          }
+        }
+      },
+      "sales_order": {
+        "alias": "销售订单明细表",
+        "description": "记录公司各事业部及分公司在不同渠道下的销售订单执行情况、物料明细及交付状态。",
+        "row_granularity": "每行代表一条销售订单的明细行记录",
+        "fields": {
+          "sales_ordernum": {
+            "alias": "销售订单号",
+            "type": "string",
+            "description": "销售订单的唯一标识编号"
+          },
+          "sales_order_linenum": {
+            "alias": "订单行号",
+            "type": "string",
+            "description": "订单内部的行项目编号"
+          },
+          "order_crt_date": {
+            "alias": "订单创建日期",
+            "type": "date",
+            "description": "订单在系统中生成的日期"
+          },
+          "order_vchr_date": {
+            "alias": "订单凭证日期",
+            "type": "date",
+            "description": "订单业务凭证生效日期"
+          },
+          "order_vldfrm": {
+            "alias": "有效期起始日期",
+            "type": "date",
+            "description": "订单条款生效的起始日期"
+          },
+          "order_vldto": {
+            "alias": "有效期截止日期",
+            "type": "date",
+            "description": "订单条款失效的日期"
+          },
+          "order_salesorg_code": {
+            "alias": "销售组织代码",
+            "type": "string",
+            "description": "负责该订单的销售组织机构代码"
+          },
+          "order_salesorg_descrptn": {
+            "alias": "销售组织名称",
+            "type": "string",
+            "description": "销售组织机构的中文名称"
+          },
+          "order_distri_chnl_code": {
+            "alias": "分销渠道代码",
+            "type": "string",
+            "description": "订单所属的分销渠道分类代码"
+          },
+          "order_distri_chnl_descrptn": {
+            "alias": "分销渠道名称",
+            "type": "string",
+            "description": "分销渠道的中文描述"
+          },
+          "order_prodctnline_code": {
+            "alias": "产品线代码",
+            "type": "string",
+            "description": "订单所涉及的产品线分类代码"
+          },
+          "order_prodctnline_descrptn": {
+            "alias": "产品线名称",
+            "type": "string",
+            "description": "产品线的中文描述"
+          },
+          "busline_code": {
+            "alias": "事业部代码",
+            "type": "string",
+            "description": "订单所属业务事业部代码"
+          },
+          "busline_descrptn": {
+            "alias": "事业部名称",
+            "type": "string",
+            "description": "业务事业部的中文名称"
+          },
+          "order_chnl": {
+            "alias": "订单渠道代码",
+            "type": "string",
+            "description": "订单业务渠道分类代码"
+          },
+          "order_chnl_descrptn": {
+            "alias": "订单渠道名称",
+            "type": "string",
+            "description": "订单业务渠道的中文描述"
+          },
+          "order_typ_descrptn": {
+            "alias": "订单类型",
+            "type": "string",
+            "description": "销售订单的业务类型描述"
+          },
+          "order_sts_code": {
+            "alias": "订单状态代码",
+            "type": "string",
+            "description": "订单的当前处理状态代码（如C:已完成, A:未完成）"
+          },
+          "order_sts_descrptn": {
+            "alias": "订单状态名称",
+            "type": "string",
+            "description": "订单状态的中文描述"
+          },
+          "order_dlvry_sts_code": {
+            "alias": "交货状态代码",
+            "type": "string",
+            "description": "订单的物流交货进度代码"
+          },
+          "order_dlvry_sts_descrptn": {
+            "alias": "交货状态名称",
+            "type": "string",
+            "description": "订单交货进度的中文描述"
+          },
+          "order_qty": {
+            "alias": "订单数量",
+            "type": "float",
+            "description": "订单的订购数量，单位为千克"
+          },
+          "order_qty_unit_descrptn": {
+            "alias": "数量单位",
+            "type": "string",
+            "description": "订单数量的计量单位"
+          },
+          "order_qty_mt": {
+            "alias": "订单数量(吨)",
+            "type": "float",
+            "description": "订单数量换算为吨后的数值"
+          },
+          "order_net_amt": {
+            "alias": "订单净金额",
+            "type": "float",
+            "description": "订单的实际成交净金额"
+          },
+          "order_soldto_code": {
+            "alias": "售达方代码",
+            "type": "string",
+            "description": "下单购买的客户代码"
+          },
+          "order_soldto_name": {
+            "alias": "售达方名称",
+            "type": "string",
+            "description": "下单购买的客户名称"
+          },
+          "order_shipto_code": {
+            "alias": "送达方代码",
+            "type": "string",
+            "description": "货物实际送达的客户代码"
+          },
+          "order_shipto_name": {
+            "alias": "送达方名称",
+            "type": "string",
+            "description": "货物实际送达的客户名称"
+          },
+          "order_cstmr_typ_code": {
+            "alias": "客户类型代码",
+            "type": "string",
+            "description": "客户的业务属性分类代码"
+          },
+          "order_cstmr_typ_descrptn": {
+            "alias": "客户类型名称",
+            "type": "string",
+            "description": "客户类型的中文描述"
+          },
+          "order_mat_code": {
+            "alias": "物料代码",
+            "type": "string",
+            "description": "订单中销售产品的唯一物料编码"
+          },
+          "order_mat_name": {
+            "alias": "物料名称",
+            "type": "string",
+            "description": "销售产品的名称及规格"
+          },
+          "mat_outrpckgn_specfctn": {
+            "alias": "包装规格",
+            "type": "string",
+            "description": "产品的外包装规格描述"
+          },
+          "brnch_code": {
+            "alias": "分公司代码",
+            "type": "string",
+            "description": "所属分公司机构代码"
+          },
+          "brnch_descrptn": {
+            "alias": "分公司名称",
+            "type": "string",
+            "description": "所属分公司的中文名称"
+          },
+          "rgn_code": {
+            "alias": "区域代码",
+            "type": "string",
+            "description": "所属销售大区代码"
+          },
+          "rgn_descrptn": {
+            "alias": "区域名称",
+            "type": "string",
+            "description": "所属销售大区的中文名称"
+          },
+          "order_sply_plant_code": {
+            "alias": "供应工厂代码",
+            "type": "string",
+            "description": "负责发货的生产工厂代码"
+          },
+          "order_sply_plant_descrptn": {
+            "alias": "供应工厂名称",
+            "type": "string",
+            "description": "负责发货的生产工厂名称"
+          },
+          "order_pymnt_sts": {
+            "alias": "付款状态代码",
+            "type": "string",
+            "description": "订单的财务付款状态"
+          },
+          "order_pymnt_descrptn": {
+            "alias": "付款状态描述",
+            "type": "string",
+            "description": "订单财务付款状态的中文说明"
+          }
+        }
+      }
+    },
+    "business_rules": {
+      "库存预警规则": {
+        "rule": "stock_qty_mt <= safety_stock_mt",
+        "description": "当库存数量小于或等于安全库存时，触发补货预警",
+        "table": "inventory",
+        "example_sql": "SELECT mat_name, stock_qty_mt, safety_stock_mt FROM inventory WHERE stock_qty_mt <= safety_stock_mt"
+      },
+      "质量合格率计算": {
+        "rule": "(sample_size - defect_count) / sample_size",
+        "description": "计算批次产品的质量合格率",
+        "table": "quality_inspection",
+        "example_sql": "SELECT mat_name, (1 - defect_count/sample_size) AS pass_rate FROM quality_inspection"
+      },
+      "销售退货识别": {
+        "rule": "deliv_retrngds_identfctn = 'Y'",
+        "description": "识别销售交货单中的退货记录",
+        "table": "sales_delivery",
+        "example_sql": "SELECT delivnum, deliv_qty FROM sales_delivery WHERE deliv_retrngds_identfctn = 'Y'"
+      }
+    },
+    "table_relationships": [
+      {
+        "name": "分公司销售与投诉关联",
+        "left": "sales_order",
+        "right": "customer_complaint",
+        "join_type": "LEFT JOIN",
+        "on": "sales_order.brnch_code = customer_complaint.brnch_code",
+        "note": "通过分公司代码关联，用于分析各分公司投诉率"
+      },
+      {
+        "name": "工厂生产与质量检验关联",
+        "left": "production_output",
+        "right": "quality_inspection",
+        "join_type": "INNER JOIN",
+        "on": "production_output.batch_id = quality_inspection.batch_id AND production_output.mat_code = quality_inspection.mat_code",
+        "note": "通过批次号和物料编码关联，追踪生产产出的质量情况"
+      },
+      {
+        "name": "采购与工厂库存关联",
+        "left": "procurement",
+        "right": "inventory",
+        "join_type": "LEFT JOIN",
+        "on": "procurement.target_plant_code = inventory.plant_code AND procurement.raw_material_code = inventory.mat_code",
+        "note": "用于分析原材料采购入库对工厂库存的影响"
+      }
+    ],
+    "query_term_mapping": {
+      "库存不足": "stock_qty_mt <= safety_stock_mt",
+      "退货单": "deliv_retrngds_identfctn = 'Y'",
+      "生产合格率": "(sample_size - defect_count) / sample_size",
+      "加班时长": "actual_hours",
+      "销售额": "deliv_qty",
+      "投诉率": "COUNT(complaint_id) / COUNT(sales_ordernum)",
+      "物料": "mat_code",
+      "工厂": "plant_code",
+      "分公司": "brnch_code",
+      "统计年月": "record_yearmth"
+    }
+  },
+  "artifacts": [
+    "/home/ubuntu/dataagent-v2/workspaces/supply-chain/schema_dict.yaml"
+  ],
+  "message": "Reviewed and approved by user",
+  "errors": []
+}

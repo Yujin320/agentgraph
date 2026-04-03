@@ -20,6 +20,43 @@ api.interceptors.request.use((config) => {
 export default api;
 
 // ────────────────────────────────────────────────────────────
+// Pipeline API helpers
+// ────────────────────────────────────────────────────────────
+
+export const pipelineApi = {
+  createWorkspace: (data: {
+    name: string;
+    db_url: string;
+    title?: string;
+    description?: string;
+  }) => api.post('/api/workspaces', data),
+
+  createPipeline: (ws: string) =>
+    api.post(`/api/workspaces/${ws}/pipeline/create`),
+
+  getState: (ws: string) =>
+    api.get(`/api/workspaces/${ws}/pipeline`),
+
+  runStage: (ws: string, stage: string, data?: { input?: object; config?: object }) =>
+    api.post(`/api/workspaces/${ws}/pipeline/run/${stage}`, data),
+
+  runNext: (ws: string) =>
+    api.post(`/api/workspaces/${ws}/pipeline/next`),
+
+  getResult: (ws: string, stage: string) =>
+    api.get(`/api/workspaces/${ws}/pipeline/result/${stage}`),
+
+  submitReview: (ws: string, stage: string, data: unknown) =>
+    api.put(`/api/workspaces/${ws}/pipeline/review/${stage}`, { data }),
+
+  skipStage: (ws: string, stage: string) =>
+    api.post(`/api/workspaces/${ws}/pipeline/skip/${stage}`),
+
+  listStages: () =>
+    api.get('/api/pipeline/stages'),
+};
+
+// ────────────────────────────────────────────────────────────
 // SSE helper — uses fetch so we can pass Bearer token in headers.
 // EventSource doesn't support custom headers, so we pass token
 // both as a header AND as a query param for middleware compatibility.

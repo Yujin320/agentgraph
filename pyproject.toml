@@ -30,6 +30,8 @@ dependencies = [
   "chromadb>=0.5",
   "pandas>=2.0",
   "networkx>=3.0",
+  # Graph database
+  "neo4j>=5.0",
 ]
 
 [project.optional-dependencies]

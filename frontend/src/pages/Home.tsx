@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Col, Row, Spin, Typography, Alert, Tag } from 'antd';
-import { ArrowRightOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { Card, Col, Row, Spin, Typography, Alert, Tag, Button } from 'antd';
+import { ArrowRightOutlined, DatabaseOutlined, PlusOutlined } from '@ant-design/icons';
 import api from '../api/client';
 
 const { Title, Paragraph, Text } = Typography;
@@ -37,6 +37,15 @@ const Home: React.FC = () => {
           <Paragraph style={{ color: '#666', fontSize: 15, marginTop: 8 }}>
             选择一个工作空间开始分析
           </Paragraph>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            size="large"
+            style={{ marginTop: 16, background: '#4f46e5', borderColor: '#4f46e5' }}
+            onClick={() => navigate('/create')}
+          >
+            创建新工作空间
+          </Button>
         </div>
 
         {/* Workspace grid */}

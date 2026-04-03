@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "data": {
+    "total_indexed": 65,
+    "auto_generated": 44,
+    "manual_examples": 21
+  },
+  "artifacts": [
+    "/home/ubuntu/dataagent-v2/workspaces/supply-chain/few_shots_auto.json"
+  ],
+  "message": "SQL RAG 训练完成: 65 条索引（自动 44 + 手工 21）",
+  "errors": []
+}

@@ -1,0 +1,1436 @@
+{
+  "status": "success",
+  "data": {
+    "nodes": [
+      {
+        "id": "metric_customer_complaint_resolution_days",
+        "name": "resolution_days",
+        "alias": "处理时长",
+        "table": "customer_complaint",
+        "description": "从投诉发起至处理完成所经过的天数",
+        "type": "metric"
+      },
+      {
+        "id": "metric_customer_complaint_is_resolved",
+        "name": "is_resolved",
+        "alias": "是否已解决",
+        "table": "customer_complaint",
+        "description": "投诉处理状态，1表示已解决，0表示未解决",
+        "type": "metric"
+      },
+      {
+        "id": "metric_inventory_stock_qty_mt",
+        "name": "stock_qty_mt",
+        "alias": "库存数量(吨)",
+        "table": "inventory",
+        "description": "当前库存的物理重量，单位为公吨(MT)",
+        "type": "metric"
+      },
+      {
+        "id": "metric_inventory_safety_stock_mt",
+        "name": "safety_stock_mt",
+        "alias": "安全库存(吨)",
+        "table": "inventory",
+        "description": "设定的最低安全库存阈值，单位为公吨(MT)",
+        "type": "metric"
+      },
+      {
+        "id": "metric_inventory_inbound_qty_mt",
+        "name": "inbound_qty_mt",
+        "alias": "入库数量(吨)",
+        "table": "inventory",
+        "description": "当日或统计周期内的入库总量，单位为公吨(MT)",
+        "type": "metric"
+      },
+      {
+        "id": "metric_inventory_outbound_qty_mt",
+        "name": "outbound_qty_mt",
+        "alias": "出库数量(吨)",
+        "table": "inventory",
+        "description": "当日或统计周期内的出库总量，单位为公吨(MT)",
+        "type": "metric"
+      },
+      {
+        "id": "metric_inventory_days_of_supply",
+        "name": "days_of_supply",
+        "alias": "供应天数",
+        "table": "inventory",
+        "description": "当前库存可支撑的预计消耗天数",
+        "type": "metric"
+      },
+      {
+        "id": "metric_overtime_hours_scheduled_hours",
+        "name": "scheduled_hours",
+        "alias": "计划工时",
+        "table": "overtime_hours",
+        "description": "该班次原定的标准工作时长（小时）",
+        "type": "metric"
+      },
+      {
+        "id": "metric_overtime_hours_actual_hours",
+        "name": "actual_hours",
+        "alias": "实际工时",
+        "table": "overtime_hours",
+        "description": "该班次实际投入的总工作时长（小时）",
+        "type": "metric"
+      },
+      {
+        "id": "metric_overtime_hours_overtime_hours",
+        "name": "overtime_hours",
+        "alias": "加班工时",
+        "table": "overtime_hours",
+        "description": "实际工时超出计划工时的部分（小时）",
+        "type": "metric"
+      },
+      {
+        "id": "metric_overtime_hours_worker_count",
+        "name": "worker_count",
+        "alias": "作业人数",
+        "table": "overtime_hours",
+        "description": "该班次参与作业的员工总数",
+        "type": "metric"
+      },
+      {
+        "id": "metric_overtime_hours_overtime_cost",
+        "name": "overtime_cost",
+        "alias": "加班成本",
+        "table": "overtime_hours",
+        "description": "该班次产生的加班费用总额",
+        "type": "metric"
+      },
+      {
+        "id": "metric_procurement_order_qty_mt",
+        "name": "order_qty_mt",
+        "alias": "订单数量(吨)",
+        "table": "procurement",
+        "description": "采购订单中约定的采购重量，单位为公吨",
+        "type": "metric"
+      },
+      {
+        "id": "metric_procurement_received_qty_mt",
+        "name": "received_qty_mt",
+        "alias": "实收数量(吨)",
+        "table": "procurement",
+        "description": "实际入库的原材料重量，单位为公吨",
+        "type": "metric"
+      },
+      {
+        "id": "metric_procurement_unit_price",
+        "name": "unit_price",
+        "alias": "单价",
+        "table": "procurement",
+        "description": "原材料的采购单价",
+        "type": "metric"
+      },
+      {
+        "id": "metric_procurement_total_amount",
+        "name": "total_amount",
+        "alias": "订单总金额",
+        "table": "procurement",
+        "description": "该笔采购订单的总金额，通常为单价乘以订单数量",
+        "type": "metric"
+      },
+      {
+        "id": "metric_procurement_delay_days",
+        "name": "delay_days",
+        "alias": "延迟天数",
+        "table": "procurement",
+        "description": "实际到货日期与预计到货日期的差值，0表示未延迟",
+        "type": "metric"
+      },
+      {
+        "id": "metric_production_output_planned_qty_mt",
+        "name": "planned_qty_mt",
+        "alias": "计划产量(吨)",
+        "table": "production_output",
+        "description": "该批次计划生产的重量，单位为吨",
+        "type": "metric"
+      },
+      {
+        "id": "metric_production_output_actual_qty_mt",
+        "name": "actual_qty_mt",
+        "alias": "实际产量(吨)",
+        "table": "production_output",
+        "description": "该批次实际产出的合格品重量，单位为吨",
+        "type": "metric"
+      },
+      {
+        "id": "metric_production_output_yield_rate",
+        "name": "yield_rate",
+        "alias": "良品率",
+        "table": "production_output",
+        "description": "实际产出与计划产出的比率，取值范围0-1",
+        "type": "metric"
+      },
+      {
+        "id": "metric_production_output_scrap_qty_mt",
+        "name": "scrap_qty_mt",
+        "alias": "报废量(吨)",
+        "table": "production_output",
+        "description": "生产过程中产生的废品重量，单位为吨",
+        "type": "metric"
+      },
+      {
+        "id": "metric_production_output_scrap_rate",
+        "name": "scrap_rate",
+        "alias": "报废率",
+        "table": "production_output",
+        "description": "报废量占总投入量的比例",
+        "type": "metric"
+      },
+      {
+        "id": "metric_production_output_downtime_hours",
+        "name": "downtime_hours",
+        "alias": "停机时间(小时)",
+        "table": "production_output",
+        "description": "该批次生产期间设备停机或故障的总时长",
+        "type": "metric"
+      },
+      {
+        "id": "metric_promotion_discount_rate",
+        "name": "discount_rate",
+        "alias": "折扣率",
+        "table": "promotion",
+        "description": "促销活动的折扣比例，如0.85表示85折",
+        "type": "metric"
+      },
+      {
+        "id": "metric_promotion_budget_amount",
+        "name": "budget_amount",
+        "alias": "预算金额",
+        "table": "promotion",
+        "description": "该促销活动计划投入的预算总额",
+        "type": "metric"
+      },
+      {
+        "id": "metric_promotion_actual_spend",
+        "name": "actual_spend",
+        "alias": "实际支出金额",
+        "table": "promotion",
+        "description": "该促销活动实际发生的费用支出",
+        "type": "metric"
+      },
+      {
+        "id": "metric_promotion_expected_lift_pct",
+        "name": "expected_lift_pct",
+        "alias": "预期销量提升率",
+        "table": "promotion",
+        "description": "促销活动预期的销量增长百分比",
+        "type": "metric"
+      },
+      {
+        "id": "metric_quality_inspection_sample_size",
+        "name": "sample_size",
+        "alias": "抽检样本量",
+        "table": "quality_inspection",
+        "description": "本次检验抽取的样本总数量",
+        "type": "metric"
+      },
+      {
+        "id": "metric_quality_inspection_defect_count",
+        "name": "defect_count",
+        "alias": "缺陷数量",
+        "table": "quality_inspection",
+        "description": "在抽检样本中发现的缺陷产品总数",
+        "type": "metric"
+      },
+      {
+        "id": "metric_quality_inspection_defect_rate",
+        "name": "defect_rate",
+        "alias": "缺陷率",
+        "table": "quality_inspection",
+        "description": "缺陷数量占抽检样本量的比例",
+        "type": "metric"
+      },
+      {
+        "id": "metric_rolling_plan_rllng_planqty_mt",
+        "name": "rllng_planqty_mt",
+        "alias": "滚动计划数量(吨)",
+        "table": "rolling_plan",
+        "description": "预估的滚动销售计划数量，单位为公吨(MT)。",
+        "type": "metric"
+      },
+      {
+        "id": "metric_rolling_plan_plant_shipgds_plan_mt",
+        "name": "plant_shipgds_plan_mt",
+        "alias": "工厂发货计划数量(吨)",
+        "table": "rolling_plan",
+        "description": "工厂计划发货的数量，单位为公吨(MT)。",
+        "type": "metric"
+      },
+      {
+        "id": "metric_sales_delivery_deliv_qty",
+        "name": "deliv_qty",
+        "alias": "交货数量",
+        "table": "sales_delivery",
+        "description": "本次交货的物料数量，单位为千克",
+        "type": "metric"
+      },
+      {
+        "id": "metric_sales_delivery_deliv_qty_mt",
+        "name": "deliv_qty_mt",
+        "alias": "交货数量(吨)",
+        "table": "sales_delivery",
+        "description": "以吨为单位的交货数量",
+        "type": "metric"
+      },
+      {
+        "id": "metric_sales_delivery_deliv_dlvry_amt",
+        "name": "deliv_dlvry_amt",
+        "alias": "交货金额",
+        "table": "sales_delivery",
+        "description": "本次交货对应的销售金额",
+        "type": "metric"
+      },
+      {
+        "id": "metric_sales_delivery_is_external_transfer",
+        "name": "is_external_transfer",
+        "alias": "是否外部调拨",
+        "table": "sales_delivery",
+        "description": "标识是否为外部调拨业务，1为是，0为否",
+        "type": "metric"
+      },
+      {
+        "id": "metric_sales_delivery_logistics_cost_per_mt",
+        "name": "logistics_cost_per_mt",
+        "alias": "单位吨物流成本",
+        "table": "sales_delivery",
+        "description": "每吨货物的物流运输成本",
+        "type": "metric"
+      },
+      {
+        "id": "metric_sales_order_order_qty",
+        "name": "order_qty",
+        "alias": "订单数量",
+        "table": "sales_order",
+        "description": "订单的订购数量，单位为千克",
+        "type": "metric"
+      },
+      {
+        "id": "metric_sales_order_order_qty_mt",
+        "name": "order_qty_mt",
+        "alias": "订单数量(吨)",
+        "table": "sales_order",
+        "description": "订单数量换算为吨后的数值",
+        "type": "metric"
+      },
+      {
+        "id": "metric_sales_order_order_net_amt",
+        "name": "order_net_amt",
+        "alias": "订单净金额",
+        "table": "sales_order",
+        "description": "订单的实际成交净金额",
+        "type": "metric"
+      },
+      {
+        "id": "dim_customer_complaint_brnch_code",
+        "name": "brnch_code",
+        "alias": "分公司代码",
+        "table": "customer_complaint",
+        "description": "所属分公司的唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_customer_complaint_brnch_descrptn",
+        "name": "brnch_descrptn",
+        "alias": "分公司名称",
+        "table": "customer_complaint",
+        "description": "分公司的中文描述名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_customer_complaint_customer_code",
+        "name": "customer_code",
+        "alias": "客户代码",
+        "table": "customer_complaint",
+        "description": "投诉客户的唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_customer_complaint_customer_name",
+        "name": "customer_name",
+        "alias": "客户名称",
+        "table": "customer_complaint",
+        "description": "投诉客户的单位名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_customer_complaint_mat_code",
+        "name": "mat_code",
+        "alias": "物料代码",
+        "table": "customer_complaint",
+        "description": "投诉涉及的产品物料编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_customer_complaint_mat_name",
+        "name": "mat_name",
+        "alias": "物料名称",
+        "table": "customer_complaint",
+        "description": "投诉涉及的产品名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_inventory_plant_code",
+        "name": "plant_code",
+        "alias": "工厂代码",
+        "table": "inventory",
+        "description": "生产工厂的唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_inventory_plant_descrptn",
+        "name": "plant_descrptn",
+        "alias": "工厂名称",
+        "table": "inventory",
+        "description": "工厂的中文描述名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_inventory_mat_code",
+        "name": "mat_code",
+        "alias": "物料代码",
+        "table": "inventory",
+        "description": "库存物料的唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_inventory_mat_name",
+        "name": "mat_name",
+        "alias": "物料名称",
+        "table": "inventory",
+        "description": "库存物料的中文名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_overtime_hours_plant_code",
+        "name": "plant_code",
+        "alias": "工厂代码",
+        "table": "overtime_hours",
+        "description": "工厂的唯一编码标识",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_overtime_hours_plant_descrptn",
+        "name": "plant_descrptn",
+        "alias": "工厂名称",
+        "table": "overtime_hours",
+        "description": "工厂的中文名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_procurement_supplier_code",
+        "name": "supplier_code",
+        "alias": "供应商编码",
+        "table": "procurement",
+        "description": "供应商的唯一识别代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_procurement_supplier_name",
+        "name": "supplier_name",
+        "alias": "供应商名称",
+        "table": "procurement",
+        "description": "提供原材料的供应商全称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_procurement_raw_material_code",
+        "name": "raw_material_code",
+        "alias": "原材料编码",
+        "table": "procurement",
+        "description": "采购原材料的唯一识别代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_procurement_raw_material_name",
+        "name": "raw_material_name",
+        "alias": "原材料名称",
+        "table": "procurement",
+        "description": "采购原材料的品名描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_procurement_target_plant_code",
+        "name": "target_plant_code",
+        "alias": "目标工厂编码",
+        "table": "procurement",
+        "description": "收货工厂的唯一识别代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_procurement_target_plant_descrptn",
+        "name": "target_plant_descrptn",
+        "alias": "目标工厂名称",
+        "table": "procurement",
+        "description": "接收原材料的工厂名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_production_output_plant_code",
+        "name": "plant_code",
+        "alias": "工厂代码",
+        "table": "production_output",
+        "description": "生产所属工厂的唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_production_output_plant_descrptn",
+        "name": "plant_descrptn",
+        "alias": "工厂名称",
+        "table": "production_output",
+        "description": "生产所属工厂的中文名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_production_output_mat_code",
+        "name": "mat_code",
+        "alias": "物料编码",
+        "table": "production_output",
+        "description": "生产产品的物料唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_production_output_mat_name",
+        "name": "mat_name",
+        "alias": "物料名称",
+        "table": "production_output",
+        "description": "生产产品的中文名称及规格",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_promotion_promo_name",
+        "name": "promo_name",
+        "alias": "促销活动名称",
+        "table": "promotion",
+        "description": "促销活动的业务描述名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_promotion_brnch_code",
+        "name": "brnch_code",
+        "alias": "分公司代码",
+        "table": "promotion",
+        "description": "执行促销活动的分公司唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_promotion_brnch_descrptn",
+        "name": "brnch_descrptn",
+        "alias": "分公司名称",
+        "table": "promotion",
+        "description": "分公司的中文名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_promotion_channel_code",
+        "name": "channel_code",
+        "alias": "渠道代码",
+        "table": "promotion",
+        "description": "促销活动覆盖的销售渠道编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_promotion_channel_descrptn",
+        "name": "channel_descrptn",
+        "alias": "渠道名称",
+        "table": "promotion",
+        "description": "销售渠道的中文描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_promotion_mat_code",
+        "name": "mat_code",
+        "alias": "物料代码",
+        "table": "promotion",
+        "description": "参与促销活动的物料唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_promotion_mat_name",
+        "name": "mat_name",
+        "alias": "物料名称",
+        "table": "promotion",
+        "description": "参与促销活动的物料名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_quality_inspection_plant_code",
+        "name": "plant_code",
+        "alias": "工厂代码",
+        "table": "quality_inspection",
+        "description": "执行检验的工厂唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_quality_inspection_plant_descrptn",
+        "name": "plant_descrptn",
+        "alias": "工厂名称",
+        "table": "quality_inspection",
+        "description": "工厂的中文名称描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_quality_inspection_mat_code",
+        "name": "mat_code",
+        "alias": "物料编码",
+        "table": "quality_inspection",
+        "description": "被检验产品的物料唯一编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_quality_inspection_mat_name",
+        "name": "mat_name",
+        "alias": "物料名称",
+        "table": "quality_inspection",
+        "description": "被检验产品的中文名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_mngmt_bu_code",
+        "name": "mngmt_bu_code",
+        "alias": "管理事业部代码",
+        "table": "rolling_plan",
+        "description": "所属管理事业部的唯一编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_mngmt_bu_descrptn",
+        "name": "mngmt_bu_descrptn",
+        "alias": "管理事业部名称",
+        "table": "rolling_plan",
+        "description": "所属管理事业部的中文名称。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_busline_code",
+        "name": "busline_code",
+        "alias": "业务线代码",
+        "table": "rolling_plan",
+        "description": "所属业务线的唯一编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_busline_descrptn",
+        "name": "busline_descrptn",
+        "alias": "业务线名称",
+        "table": "rolling_plan",
+        "description": "所属业务线的中文名称，如餐饮事业部、消费品事业部等。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_brnch_code",
+        "name": "brnch_code",
+        "alias": "分公司代码",
+        "table": "rolling_plan",
+        "description": "所属分公司的唯一编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_brnch_descrptn",
+        "name": "brnch_descrptn",
+        "alias": "分公司名称",
+        "table": "rolling_plan",
+        "description": "所属分公司的中文名称。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_rgn_code",
+        "name": "rgn_code",
+        "alias": "区域代码",
+        "table": "rolling_plan",
+        "description": "所属销售区域的唯一编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_rgn_descrptn",
+        "name": "rgn_descrptn",
+        "alias": "区域名称",
+        "table": "rolling_plan",
+        "description": "所属销售区域的中文名称。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_chnl_typ_code",
+        "name": "chnl_typ_code",
+        "alias": "渠道类型代码",
+        "table": "rolling_plan",
+        "description": "销售渠道类型的唯一编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_chnl_typ_descrptn",
+        "name": "chnl_typ_descrptn",
+        "alias": "渠道类型名称",
+        "table": "rolling_plan",
+        "description": "销售渠道类型的中文名称，如传统流通、电商渠道等。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_cstmr_code",
+        "name": "cstmr_code",
+        "alias": "客户代码",
+        "table": "rolling_plan",
+        "description": "客户的唯一标识编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_cstmr_name",
+        "name": "cstmr_name",
+        "alias": "客户名称",
+        "table": "rolling_plan",
+        "description": "客户的中文名称。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_cstmr_typ_code",
+        "name": "cstmr_typ_code",
+        "alias": "客户类型代码",
+        "table": "rolling_plan",
+        "description": "客户类型的唯一编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_cstmr_typ_descrptn",
+        "name": "cstmr_typ_descrptn",
+        "alias": "客户类型名称",
+        "table": "rolling_plan",
+        "description": "客户类型的中文名称，如KA卖场、一级经销商等。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_mat_code",
+        "name": "mat_code",
+        "alias": "物料代码",
+        "table": "rolling_plan",
+        "description": "物料的唯一标识编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_mat_name",
+        "name": "mat_name",
+        "alias": "物料名称",
+        "table": "rolling_plan",
+        "description": "物料的中文名称及规格描述。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_mat_prodctnline_code",
+        "name": "mat_prodctnline_code",
+        "alias": "物料生产线代码",
+        "table": "rolling_plan",
+        "description": "物料所属生产线的唯一编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_mat_prodctnline_descrptn",
+        "name": "mat_prodctnline_descrptn",
+        "alias": "物料生产线名称",
+        "table": "rolling_plan",
+        "description": "物料所属生产线的中文名称。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_sply_plant_code",
+        "name": "sply_plant_code",
+        "alias": "供应工厂代码",
+        "table": "rolling_plan",
+        "description": "负责供应该物料的工厂唯一编码。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_rolling_plan_sply_plant_descrptn",
+        "name": "sply_plant_descrptn",
+        "alias": "供应工厂名称",
+        "table": "rolling_plan",
+        "description": "负责供应该物料的工厂中文名称。",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_typ_descrptn",
+        "name": "deliv_typ_descrptn",
+        "alias": "交货类型描述",
+        "table": "sales_delivery",
+        "description": "交货单的业务类型，如标准销售交货",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_pgi_sts_code",
+        "name": "deliv_pgi_sts_code",
+        "alias": "发货过账状态码",
+        "table": "sales_delivery",
+        "description": "发货过账（Post Goods Issue）的状态代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_pgi_sts_descrptn",
+        "name": "deliv_pgi_sts_descrptn",
+        "alias": "发货过账状态描述",
+        "table": "sales_delivery",
+        "description": "发货过账状态的详细说明",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_qty_unit_descrptn",
+        "name": "deliv_qty_unit_descrptn",
+        "alias": "交货数量单位",
+        "table": "sales_delivery",
+        "description": "交货数量的计量单位",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_soldto_code",
+        "name": "deliv_soldto_code",
+        "alias": "售达方编码",
+        "table": "sales_delivery",
+        "description": "负责下单的客户编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_soldto_name",
+        "name": "deliv_soldto_name",
+        "alias": "售达方名称",
+        "table": "sales_delivery",
+        "description": "负责下单的客户名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_shipto_code",
+        "name": "deliv_shipto_code",
+        "alias": "送达方编码",
+        "table": "sales_delivery",
+        "description": "实际接收货物的客户编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_shipto_name",
+        "name": "deliv_shipto_name",
+        "alias": "送达方名称",
+        "table": "sales_delivery",
+        "description": "实际接收货物的客户名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_order_cstmr_typ_code",
+        "name": "order_cstmr_typ_code",
+        "alias": "客户类型编码",
+        "table": "sales_delivery",
+        "description": "客户的业务分类代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_order_cstmr_typ_descrptn",
+        "name": "order_cstmr_typ_descrptn",
+        "alias": "客户类型描述",
+        "table": "sales_delivery",
+        "description": "客户的业务分类说明，如KA卖场、经销商等",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_mat_code",
+        "name": "deliv_mat_code",
+        "alias": "物料编码",
+        "table": "sales_delivery",
+        "description": "交货产品的唯一物料代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_mat_name",
+        "name": "deliv_mat_name",
+        "alias": "物料名称",
+        "table": "sales_delivery",
+        "description": "交货产品的名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_salesorgnztn_code",
+        "name": "deliv_salesorgnztn_code",
+        "alias": "销售组织编码",
+        "table": "sales_delivery",
+        "description": "负责该笔销售的组织机构代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_salesorgnztn_descrptn",
+        "name": "deliv_salesorgnztn_descrptn",
+        "alias": "销售组织描述",
+        "table": "sales_delivery",
+        "description": "负责该笔销售的组织机构名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_distri_chnl_code",
+        "name": "deliv_distri_chnl_code",
+        "alias": "分销渠道编码",
+        "table": "sales_delivery",
+        "description": "销售所使用的分销渠道代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_distri_chnl_descrptn",
+        "name": "deliv_distri_chnl_descrptn",
+        "alias": "分销渠道描述",
+        "table": "sales_delivery",
+        "description": "销售所使用的分销渠道说明",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_prodctnline_code",
+        "name": "deliv_prodctnline_code",
+        "alias": "生产线编码",
+        "table": "sales_delivery",
+        "description": "产品所属生产线代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_prodctnline_descrptn",
+        "name": "deliv_prodctnline_descrptn",
+        "alias": "生产线描述",
+        "table": "sales_delivery",
+        "description": "产品所属生产线名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_busline_code",
+        "name": "busline_code",
+        "alias": "事业部编码",
+        "table": "sales_delivery",
+        "description": "所属业务线代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_busline_descrptn",
+        "name": "busline_descrptn",
+        "alias": "事业部描述",
+        "table": "sales_delivery",
+        "description": "所属业务线名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_sply_plant_code",
+        "name": "deliv_sply_plant_code",
+        "alias": "供应工厂编码",
+        "table": "sales_delivery",
+        "description": "负责发货的工厂代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_deliv_sply_plant_descrptn",
+        "name": "deliv_sply_plant_descrptn",
+        "alias": "供应工厂描述",
+        "table": "sales_delivery",
+        "description": "负责发货的工厂名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_brnch_code",
+        "name": "brnch_code",
+        "alias": "分公司编码",
+        "table": "sales_delivery",
+        "description": "所属分公司代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_brnch_descrptn",
+        "name": "brnch_descrptn",
+        "alias": "分公司描述",
+        "table": "sales_delivery",
+        "description": "所属分公司名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_rgn_code",
+        "name": "rgn_code",
+        "alias": "区域编码",
+        "table": "sales_delivery",
+        "description": "所属销售大区代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_rgn_descrptn",
+        "name": "rgn_descrptn",
+        "alias": "区域描述",
+        "table": "sales_delivery",
+        "description": "所属销售大区名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_dlvrgds_addr_prvnc_descrptn",
+        "name": "dlvrgds_addr_prvnc_descrptn",
+        "alias": "省份",
+        "table": "sales_delivery",
+        "description": "收货地址所在省份",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_dlvrgds_addr_prvlvlcity_descrptn",
+        "name": "dlvrgds_addr_prvlvlcity_descrptn",
+        "alias": "城市",
+        "table": "sales_delivery",
+        "description": "收货地址所在城市",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_delivery_dlvrgds_addr_cnty_descrptn",
+        "name": "dlvrgds_addr_cnty_descrptn",
+        "alias": "区县",
+        "table": "sales_delivery",
+        "description": "收货地址所在区县",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_salesorg_code",
+        "name": "order_salesorg_code",
+        "alias": "销售组织代码",
+        "table": "sales_order",
+        "description": "负责该订单的销售组织机构代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_salesorg_descrptn",
+        "name": "order_salesorg_descrptn",
+        "alias": "销售组织名称",
+        "table": "sales_order",
+        "description": "销售组织机构的中文名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_distri_chnl_code",
+        "name": "order_distri_chnl_code",
+        "alias": "分销渠道代码",
+        "table": "sales_order",
+        "description": "订单所属的分销渠道分类代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_distri_chnl_descrptn",
+        "name": "order_distri_chnl_descrptn",
+        "alias": "分销渠道名称",
+        "table": "sales_order",
+        "description": "分销渠道的中文描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_prodctnline_code",
+        "name": "order_prodctnline_code",
+        "alias": "产品线代码",
+        "table": "sales_order",
+        "description": "订单所涉及的产品线分类代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_prodctnline_descrptn",
+        "name": "order_prodctnline_descrptn",
+        "alias": "产品线名称",
+        "table": "sales_order",
+        "description": "产品线的中文描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_busline_code",
+        "name": "busline_code",
+        "alias": "事业部代码",
+        "table": "sales_order",
+        "description": "订单所属业务事业部代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_busline_descrptn",
+        "name": "busline_descrptn",
+        "alias": "事业部名称",
+        "table": "sales_order",
+        "description": "业务事业部的中文名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_chnl_descrptn",
+        "name": "order_chnl_descrptn",
+        "alias": "订单渠道名称",
+        "table": "sales_order",
+        "description": "订单业务渠道的中文描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_typ_descrptn",
+        "name": "order_typ_descrptn",
+        "alias": "订单类型",
+        "table": "sales_order",
+        "description": "销售订单的业务类型描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_sts_code",
+        "name": "order_sts_code",
+        "alias": "订单状态代码",
+        "table": "sales_order",
+        "description": "订单的当前处理状态代码（如C:已完成, A:未完成）",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_sts_descrptn",
+        "name": "order_sts_descrptn",
+        "alias": "订单状态名称",
+        "table": "sales_order",
+        "description": "订单状态的中文描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_dlvry_sts_code",
+        "name": "order_dlvry_sts_code",
+        "alias": "交货状态代码",
+        "table": "sales_order",
+        "description": "订单的物流交货进度代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_dlvry_sts_descrptn",
+        "name": "order_dlvry_sts_descrptn",
+        "alias": "交货状态名称",
+        "table": "sales_order",
+        "description": "订单交货进度的中文描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_qty_unit_descrptn",
+        "name": "order_qty_unit_descrptn",
+        "alias": "数量单位",
+        "table": "sales_order",
+        "description": "订单数量的计量单位",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_soldto_code",
+        "name": "order_soldto_code",
+        "alias": "售达方代码",
+        "table": "sales_order",
+        "description": "下单购买的客户代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_soldto_name",
+        "name": "order_soldto_name",
+        "alias": "售达方名称",
+        "table": "sales_order",
+        "description": "下单购买的客户名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_shipto_code",
+        "name": "order_shipto_code",
+        "alias": "送达方代码",
+        "table": "sales_order",
+        "description": "货物实际送达的客户代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_shipto_name",
+        "name": "order_shipto_name",
+        "alias": "送达方名称",
+        "table": "sales_order",
+        "description": "货物实际送达的客户名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_cstmr_typ_code",
+        "name": "order_cstmr_typ_code",
+        "alias": "客户类型代码",
+        "table": "sales_order",
+        "description": "客户的业务属性分类代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_cstmr_typ_descrptn",
+        "name": "order_cstmr_typ_descrptn",
+        "alias": "客户类型名称",
+        "table": "sales_order",
+        "description": "客户类型的中文描述",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_mat_code",
+        "name": "order_mat_code",
+        "alias": "物料代码",
+        "table": "sales_order",
+        "description": "订单中销售产品的唯一物料编码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_mat_name",
+        "name": "order_mat_name",
+        "alias": "物料名称",
+        "table": "sales_order",
+        "description": "销售产品的名称及规格",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_brnch_code",
+        "name": "brnch_code",
+        "alias": "分公司代码",
+        "table": "sales_order",
+        "description": "所属分公司机构代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_brnch_descrptn",
+        "name": "brnch_descrptn",
+        "alias": "分公司名称",
+        "table": "sales_order",
+        "description": "所属分公司的中文名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_rgn_code",
+        "name": "rgn_code",
+        "alias": "区域代码",
+        "table": "sales_order",
+        "description": "所属销售大区代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_rgn_descrptn",
+        "name": "rgn_descrptn",
+        "alias": "区域名称",
+        "table": "sales_order",
+        "description": "所属销售大区的中文名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_sply_plant_code",
+        "name": "order_sply_plant_code",
+        "alias": "供应工厂代码",
+        "table": "sales_order",
+        "description": "负责发货的生产工厂代码",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_sply_plant_descrptn",
+        "name": "order_sply_plant_descrptn",
+        "alias": "供应工厂名称",
+        "table": "sales_order",
+        "description": "负责发货的生产工厂名称",
+        "type": "dimension"
+      },
+      {
+        "id": "dim_sales_order_order_pymnt_descrptn",
+        "name": "order_pymnt_descrptn",
+        "alias": "付款状态描述",
+        "table": "sales_order",
+        "description": "订单财务付款状态的中文说明",
+        "type": "dimension"
+      },
+      {
+        "id": "tbl_customer_complaint",
+        "name": "customer_complaint",
+        "alias": "客户投诉记录表",
+        "description": "记录公司各分公司客户针对产品及服务提出的投诉详情及处理进度。",
+        "type": "table"
+      },
+      {
+        "id": "tbl_inventory",
+        "name": "inventory",
+        "alias": "工厂库存快照表",
+        "description": "记录各工厂物料在特定日期的库存水平、进出库情况及供应状态，用于监控库存健康度。",
+        "type": "table"
+      },
+      {
+        "id": "tbl_overtime_hours",
+        "name": "overtime_hours",
+        "alias": "工厂加班工时记录表",
+        "description": "记录各工厂车间生产线在不同班次下的计划工时、实际工时及加班工时情况，用于分析加班成本与原因。",
+        "type": "table"
+      },
+      {
+        "id": "tbl_procurement",
+        "name": "procurement",
+        "alias": "采购订单明细表",
+        "description": "记录企业原材料采购订单的执行情况、到货进度及供应商供货表现。",
+        "type": "table"
+      },
+      {
+        "id": "tbl_production_output",
+        "name": "production_output",
+        "alias": "生产产出记录表",
+        "description": "记录工厂各生产线每日的物料生产计划、实际产出、良率及停机时间等生产执行数据。",
+        "type": "table"
+      },
+      {
+        "id": "tbl_promotion",
+        "name": "promotion",
+        "alias": "促销活动明细表",
+        "description": "记录公司各分公司在不同渠道针对特定物料开展的促销活动及其预算与执行情况。",
+        "type": "table"
+      },
+      {
+        "id": "tbl_quality_inspection",
+        "name": "quality_inspection",
+        "alias": "质量检验记录表",
+        "description": "记录工厂生产批次的质量检验结果、缺陷统计及判定情况，用于监控产品质量水平。",
+        "type": "table"
+      },
+      {
+        "id": "tbl_rolling_plan",
+        "name": "rolling_plan",
+        "alias": "滚动计划表",
+        "description": "记录各事业部、分公司及渠道在不同统计周期下的物料滚动销售计划与工厂发货计划数据。",
+        "type": "table"
+      },
+      {
+        "id": "tbl_sales_delivery",
+        "name": "sales_delivery",
+        "alias": "销售交货明细表",
+        "description": "记录销售订单执行过程中的交货明细、物流状态、物料信息及相关财务与地理维度数据。",
+        "type": "table"
+      },
+      {
+        "id": "tbl_sales_order",
+        "name": "sales_order",
+        "alias": "销售订单明细表",
+        "description": "记录公司各事业部及分公司在不同渠道下的销售订单执行情况、物料明细及交付状态。",
+        "type": "table"
+      }
+    ],
+    "edges": {
+      "causal": [
+        {
+          "from_metric": "metric_production_output_actual_qty_mt",
+          "to_metric": "metric_inventory_stock_qty_mt",
+          "label": "实际产量增加补充库存",
+          "strength": "strong"
+        },
+        {
+          "from_metric": "metric_inventory_outbound_qty_mt",
+          "to_metric": "metric_inventory_stock_qty_mt",
+          "label": "出库消耗导致库存下降",
+          "strength": "strong"
+        },
+        {
+          "from_metric": "metric_production_output_downtime_hours",
+          "to_metric": "metric_production_output_actual_qty_mt",
+          "label": "停机时间增加导致实际产量下降",
+          "strength": "strong"
+        },
+        {
+          "from_metric": "metric_quality_inspection_defect_rate",
+          "to_metric": "metric_production_output_scrap_rate",
+          "label": "缺陷率升高导致报废率上升",
+          "strength": "medium"
+        },
+        {
+          "from_metric": "metric_procurement_delay_days",
+          "to_metric": "metric_inventory_stock_qty_mt",
+          "label": "采购延迟导致库存供应不足",
+          "strength": "medium"
+        },
+        {
+          "from_metric": "metric_overtime_hours_overtime_hours",
+          "to_metric": "metric_overtime_hours_overtime_cost",
+          "label": "加班工时增加直接导致加班成本上升",
+          "strength": "strong"
+        },
+        {
+          "from_metric": "metric_promotion_discount_rate",
+          "to_metric": "metric_sales_order_order_qty_mt",
+          "label": "折扣率提升刺激订单量增长",
+          "strength": "medium"
+        },
+        {
+          "from_metric": "metric_production_output_actual_qty_mt",
+          "to_metric": "metric_sales_delivery_deliv_qty_mt",
+          "label": "产量决定可交付货量",
+          "strength": "medium"
+        }
+      ],
+      "drilldown": [
+        {
+          "metric": "metric_inventory_stock_qty_mt",
+          "dimension": "dim_inventory_plant_descrptn",
+          "label": "可按工厂下钻"
+        },
+        {
+          "metric": "metric_production_output_actual_qty_mt",
+          "dimension": "dim_production_output_mat_name",
+          "label": "可按物料下钻"
+        },
+        {
+          "metric": "metric_customer_complaint_is_resolved",
+          "dimension": "dim_customer_complaint_customer_name",
+          "label": "可按客户下钻"
+        },
+        {
+          "metric": "metric_overtime_hours_overtime_cost",
+          "dimension": "dim_overtime_hours_plant_descrptn",
+          "label": "可按工厂下钻"
+        },
+        {
+          "metric": "metric_sales_delivery_deliv_dlvry_amt",
+          "dimension": "dim_promotion_brnch_descrptn",
+          "label": "可按分公司下钻"
+        }
+      ]
+    },
+    "scenarios": [
+      {
+        "id": "inventory_shortage_analysis",
+        "title": "库存告急分析",
+        "description": "分析库存低于安全库存的原因，排查生产或采购瓶颈",
+        "entry_metric": "metric_inventory_stock_qty_mt",
+        "keywords": [
+          "库存不足",
+          "缺货",
+          "安全库存"
+        ]
+      },
+      {
+        "id": "production_efficiency_analysis",
+        "title": "生产效率与质量分析",
+        "description": "监控生产停机与报废率，评估生产过程的健康度",
+        "entry_metric": "metric_production_output_yield_rate",
+        "keywords": [
+          "停机",
+          "报废率",
+          "良品率",
+          "产量"
+        ]
+      },
+      {
+        "id": "procurement_performance_analysis",
+        "title": "采购交付绩效分析",
+        "description": "评估供应商交付及时性及采购成本控制情况",
+        "entry_metric": "metric_procurement_delay_days",
+        "keywords": [
+          "延迟",
+          "采购成本",
+          "到货"
+        ]
+      },
+      {
+        "id": "sales_promotion_effectiveness",
+        "title": "促销活动效果评估",
+        "description": "分析促销投入与销量提升的转化关系",
+        "entry_metric": "metric_promotion_actual_spend",
+        "keywords": [
+          "促销",
+          "折扣",
+          "销量提升",
+          "预算"
+        ]
+      },
+      {
+        "id": "customer_service_quality",
+        "title": "客户投诉处理分析",
+        "description": "分析投诉处理时长及解决率，提升客户满意度",
+        "entry_metric": "metric_customer_complaint_resolution_days",
+        "keywords": [
+          "投诉",
+          "处理时长",
+          "解决率"
+        ]
+      }
+    ]
+  },
+  "artifacts": [
+    "/home/ubuntu/dataagent-v2/workspaces/supply-chain/knowledge_graph.json"
+  ],
+  "message": "Reviewed and approved by user",
+  "errors": []
+}

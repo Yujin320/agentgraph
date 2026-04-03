@@ -1,0 +1,180 @@
+{
+  "examples": [
+    {
+      "question": "本月处理时长是多少？",
+      "sql": "SELECT ROUND(SUM(resolution_days), 2) AS value FROM customer_complaint"
+    },
+    {
+      "question": "本月是否已解决是多少？",
+      "sql": "SELECT ROUND(SUM(is_resolved), 2) AS value FROM customer_complaint"
+    },
+    {
+      "question": "本月库存数量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(stock_qty_mt), 2) AS value FROM inventory WHERE snapshot_yearmth = '202603'"
+    },
+    {
+      "question": "本月安全库存(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(safety_stock_mt), 2) AS value FROM inventory WHERE snapshot_yearmth = '202603'"
+    },
+    {
+      "question": "本月入库数量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(inbound_qty_mt), 2) AS value FROM inventory WHERE snapshot_yearmth = '202603'"
+    },
+    {
+      "question": "本月出库数量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(outbound_qty_mt), 2) AS value FROM inventory WHERE snapshot_yearmth = '202603'"
+    },
+    {
+      "question": "本月供应天数是多少？",
+      "sql": "SELECT ROUND(SUM(days_of_supply), 2) AS value FROM inventory WHERE snapshot_yearmth = '202603'"
+    },
+    {
+      "question": "本月计划工时是多少？",
+      "sql": "SELECT ROUND(SUM(scheduled_hours), 2) AS value FROM overtime_hours"
+    },
+    {
+      "question": "本月实际工时是多少？",
+      "sql": "SELECT ROUND(SUM(actual_hours), 2) AS value FROM overtime_hours"
+    },
+    {
+      "question": "本月加班工时是多少？",
+      "sql": "SELECT ROUND(SUM(overtime_hours), 2) AS value FROM overtime_hours"
+    },
+    {
+      "question": "本月作业人数是多少？",
+      "sql": "SELECT ROUND(SUM(worker_count), 2) AS value FROM overtime_hours"
+    },
+    {
+      "question": "本月加班成本是多少？",
+      "sql": "SELECT ROUND(SUM(overtime_cost), 2) AS value FROM overtime_hours"
+    },
+    {
+      "question": "本月订单数量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(order_qty_mt), 2) AS value FROM procurement"
+    },
+    {
+      "question": "本月实收数量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(received_qty_mt), 2) AS value FROM procurement"
+    },
+    {
+      "question": "本月单价是多少？",
+      "sql": "SELECT ROUND(SUM(unit_price), 2) AS value FROM procurement"
+    },
+    {
+      "question": "本月订单总金额是多少？",
+      "sql": "SELECT ROUND(SUM(total_amount), 2) AS value FROM procurement"
+    },
+    {
+      "question": "本月延迟天数是多少？",
+      "sql": "SELECT ROUND(SUM(delay_days), 2) AS value FROM procurement"
+    },
+    {
+      "question": "本月计划产量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(planned_qty_mt), 2) AS value FROM production_output WHERE record_yearmth = '202603'"
+    },
+    {
+      "question": "本月实际产量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(actual_qty_mt), 2) AS value FROM production_output WHERE record_yearmth = '202603'"
+    },
+    {
+      "question": "本月良品率是多少？",
+      "sql": "SELECT ROUND(SUM(yield_rate), 2) AS value FROM production_output WHERE record_yearmth = '202603'"
+    },
+    {
+      "question": "本月报废量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(scrap_qty_mt), 2) AS value FROM production_output WHERE record_yearmth = '202603'"
+    },
+    {
+      "question": "本月报废率是多少？",
+      "sql": "SELECT ROUND(SUM(scrap_rate), 2) AS value FROM production_output WHERE record_yearmth = '202603'"
+    },
+    {
+      "question": "本月停机时间(小时)是多少？",
+      "sql": "SELECT ROUND(SUM(downtime_hours), 2) AS value FROM production_output WHERE record_yearmth = '202603'"
+    },
+    {
+      "question": "本月折扣率是多少？",
+      "sql": "SELECT ROUND(SUM(discount_rate), 2) AS value FROM promotion"
+    },
+    {
+      "question": "本月预算金额是多少？",
+      "sql": "SELECT ROUND(SUM(budget_amount), 2) AS value FROM promotion"
+    },
+    {
+      "question": "本月实际支出金额是多少？",
+      "sql": "SELECT ROUND(SUM(actual_spend), 2) AS value FROM promotion"
+    },
+    {
+      "question": "本月预期销量提升率是多少？",
+      "sql": "SELECT ROUND(SUM(expected_lift_pct), 2) AS value FROM promotion"
+    },
+    {
+      "question": "本月抽检样本量是多少？",
+      "sql": "SELECT ROUND(SUM(sample_size), 2) AS value FROM quality_inspection"
+    },
+    {
+      "question": "本月缺陷数量是多少？",
+      "sql": "SELECT ROUND(SUM(defect_count), 2) AS value FROM quality_inspection"
+    },
+    {
+      "question": "本月缺陷率是多少？",
+      "sql": "SELECT ROUND(SUM(defect_rate), 2) AS value FROM quality_inspection"
+    },
+    {
+      "question": "本月滚动计划数量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(rllng_planqty_mt), 2) AS value FROM rolling_plan WHERE stats_yearmth = '202603'"
+    },
+    {
+      "question": "本月工厂发货计划数量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(plant_shipgds_plan_mt), 2) AS value FROM rolling_plan WHERE stats_yearmth = '202603'"
+    },
+    {
+      "question": "本月交货数量是多少？",
+      "sql": "SELECT ROUND(SUM(deliv_qty), 2) AS value FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) = '202603'"
+    },
+    {
+      "question": "本月交货数量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(deliv_qty_mt), 2) AS value FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) = '202603'"
+    },
+    {
+      "question": "本月交货金额是多少？",
+      "sql": "SELECT ROUND(SUM(deliv_dlvry_amt), 2) AS value FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) = '202603'"
+    },
+    {
+      "question": "本月是否外部调拨是多少？",
+      "sql": "SELECT ROUND(SUM(is_external_transfer), 2) AS value FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) = '202603'"
+    },
+    {
+      "question": "本月单位吨物流成本是多少？",
+      "sql": "SELECT ROUND(SUM(logistics_cost_per_mt), 2) AS value FROM sales_delivery WHERE strftime('%Y%m', deliv_crt_time) = '202603'"
+    },
+    {
+      "question": "本月订单数量是多少？",
+      "sql": "SELECT ROUND(SUM(order_qty), 2) AS value FROM sales_order WHERE strftime('%Y%m', order_crt_date) = '202603'"
+    },
+    {
+      "question": "本月订单数量(吨)是多少？",
+      "sql": "SELECT ROUND(SUM(order_qty_mt), 2) AS value FROM sales_order WHERE strftime('%Y%m', order_crt_date) = '202603'"
+    },
+    {
+      "question": "本月订单净金额是多少？",
+      "sql": "SELECT ROUND(SUM(order_net_amt), 2) AS value FROM sales_order WHERE strftime('%Y%m', order_crt_date) = '202603'"
+    },
+    {
+      "question": "按工厂名称看库存数量(吨)",
+      "sql": "SELECT plant_descrptn, ROUND(SUM(stock_qty_mt), 2) AS value FROM inventory WHERE snapshot_yearmth = '202603' GROUP BY plant_descrptn ORDER BY value DESC LIMIT 20"
+    },
+    {
+      "question": "按物料名称看实际产量(吨)",
+      "sql": "SELECT mat_name, ROUND(SUM(actual_qty_mt), 2) AS value FROM production_output WHERE record_yearmth = '202603' GROUP BY mat_name ORDER BY value DESC LIMIT 20"
+    },
+    {
+      "question": "按客户名称看是否已解决",
+      "sql": "SELECT customer_name, ROUND(SUM(is_resolved), 2) AS value FROM customer_complaint GROUP BY customer_name ORDER BY value DESC LIMIT 20"
+    },
+    {
+      "question": "按工厂名称看加班成本",
+      "sql": "SELECT plant_descrptn, ROUND(SUM(overtime_cost), 2) AS value FROM overtime_hours GROUP BY plant_descrptn ORDER BY value DESC LIMIT 20"
+    }
+  ]
+}
