@@ -26,6 +26,11 @@ class IntrospectStage(StageBase):
         insp = inspect(engine)
         table_names = insp.get_table_names()
 
+        # Filter by whitelist if configured
+        allowed = workspace._config.get("tables")
+        if allowed:
+            table_names = [t for t in table_names if t in allowed]
+
         tables = {}
         all_columns_by_name: dict[str, list[str]] = {}  # col_name → [table.col, ...]
 

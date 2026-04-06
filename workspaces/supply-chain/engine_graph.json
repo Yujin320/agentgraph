@@ -1,5 +1,5 @@
 {
-  "description": "Engine-compatible attribution graph for 川渝大区供应链. Nodes define metric semantics + thresholds; SQL is generated dynamically by the LLM from schema_dict.yaml.",
+  "description": "Engine-compatible attribution graph for supply chain. Nodes define metric semantics + thresholds; SQL is generated dynamically by the LLM from schema_dict.yaml.",
   "scenarios": [
     {
       "id": "waididao_attribution",

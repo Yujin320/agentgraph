@@ -29,31 +29,31 @@ export const pipelineApi = {
     db_url: string;
     title?: string;
     description?: string;
-  }) => api.post('/api/workspaces', data),
+  }) => api.post('/workspaces', data),
 
   createPipeline: (ws: string) =>
-    api.post(`/api/workspaces/${ws}/pipeline/create`),
+    api.post(`/workspaces/${ws}/pipeline/create`),
 
   getState: (ws: string) =>
-    api.get(`/api/workspaces/${ws}/pipeline`),
+    api.get(`/workspaces/${ws}/pipeline`),
 
   runStage: (ws: string, stage: string, data?: { input?: object; config?: object }) =>
-    api.post(`/api/workspaces/${ws}/pipeline/run/${stage}`, data),
+    api.post(`/workspaces/${ws}/pipeline/run/${stage}`, data),
 
   runNext: (ws: string) =>
-    api.post(`/api/workspaces/${ws}/pipeline/next`),
+    api.post(`/workspaces/${ws}/pipeline/next`),
 
   getResult: (ws: string, stage: string) =>
-    api.get(`/api/workspaces/${ws}/pipeline/result/${stage}`),
+    api.get(`/workspaces/${ws}/pipeline/result/${stage}`),
 
   submitReview: (ws: string, stage: string, data: unknown) =>
-    api.put(`/api/workspaces/${ws}/pipeline/review/${stage}`, { data }),
+    api.put(`/workspaces/${ws}/pipeline/review/${stage}`, { data }),
 
   skipStage: (ws: string, stage: string) =>
-    api.post(`/api/workspaces/${ws}/pipeline/skip/${stage}`),
+    api.post(`/workspaces/${ws}/pipeline/skip/${stage}`),
 
   listStages: () =>
-    api.get('/api/pipeline/stages'),
+    api.get('/pipeline/stages'),
 };
 
 // ────────────────────────────────────────────────────────────
@@ -77,6 +77,7 @@ export function fetchSSE(
   const token = getToken();
   const abortController = new AbortController();
 
+  // url is already relative to /api (e.g. "/workspaces/ws/chat")
   const fullUrl = `/api${url}${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
   fetch(fullUrl, {

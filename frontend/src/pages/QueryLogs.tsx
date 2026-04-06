@@ -71,8 +71,8 @@ function LogsTab({ ws }: { ws: string }) {
     api
       .get(`/logs/${ws}`, { params: { limit: 20, offset: (p - 1) * 20 } })
       .then(res => {
-        setLogs(res.data.logs ?? res.data ?? []);
-        setTotal(res.data.total ?? (res.data.logs ?? res.data ?? []).length ?? 0);
+        setLogs(res.data.items ?? res.data.logs ?? res.data ?? []);
+        setTotal(res.data.total ?? (res.data.items ?? res.data.logs ?? res.data ?? []).length ?? 0);
         setLoading(false);
       })
       .catch(err => {
@@ -268,7 +268,7 @@ function FeedbackTab({ ws }: { ws: string }) {
     api.get(`/logs/${ws}`, { params: { limit: 200, min_rating: 1 } })
       .then(res => {
         const dist: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-        const entries: LogEntry[] = res.data.logs ?? res.data ?? [];
+        const entries: LogEntry[] = res.data.items ?? res.data.logs ?? res.data ?? [];
         entries.forEach(l => {
           if (l.rating && l.rating >= 1 && l.rating <= 5) dist[l.rating] = (dist[l.rating] || 0) + 1;
         });
@@ -416,7 +416,7 @@ function KnowledgeTab({ ws }: { ws: string }) {
     api
       .get(`/logs/${ws}`, { params: { limit: 100, min_rating: 4 } })
       .then(res => {
-        setCandidates(res.data.logs ?? res.data ?? []);
+        setCandidates(res.data.items ?? res.data.logs ?? res.data ?? []);
         setLoading(false);
       })
       .catch(() => setLoading(false));

@@ -91,8 +91,8 @@ export const lightColors: ThemeColors = {
   success: '#059669',
   info: '#4338ca',
 
-  shadowCard: '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-  shadowElevated: '0 4px 16px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)',
+  shadowCard: '0 2px 8px rgba(0,0,0,0.06), 0 0 1px rgba(0,0,0,0.08)',
+  shadowElevated: '0 8px 30px rgba(0,0,0,0.10), 0 0 1px rgba(0,0,0,0.08)',
 
   heroGradient: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #3730a3 100%)',
   sidebarText: '#0f172a',
@@ -137,8 +137,8 @@ export const darkColors: ThemeColors = {
   success: '#10b981',
   info: '#6366f1',
 
-  shadowCard: '0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)',
-  shadowElevated: '0 4px 16px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3)',
+  shadowCard: '0 2px 8px rgba(0,0,0,0.25), 0 0 1px rgba(255,255,255,0.05)',
+  shadowElevated: '0 8px 30px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.06)',
 
   heroGradient: 'linear-gradient(135deg, #0a0a0f 0%, #1e1b4b 50%, #312e81 100%)',
   sidebarText: '#f1f5f9',
@@ -151,7 +151,7 @@ export const darkColors: ThemeColors = {
 
 // ── AntDesign theme configs ─────────────────────────────────────────────────
 
-const FONT_FAMILY = "'DM Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+const FONT_FAMILY = "'Plus Jakarta Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 export const lightAntdTheme: ThemeConfig = {
   token: {
@@ -168,6 +168,8 @@ export const lightAntdTheme: ThemeConfig = {
     colorBorder: '#e2e0dc',
     colorBorderSecondary: '#f0eeea',
     controlHeight: 38,
+    fontWeightStrong: 700,
+    fontSize: 14,
   },
   components: {
     Layout: {
@@ -201,6 +203,8 @@ export const darkAntdTheme: ThemeConfig = {
     colorBorder: 'rgba(255,255,255,0.08)',
     colorBorderSecondary: 'rgba(255,255,255,0.04)',
     controlHeight: 38,
+    fontWeightStrong: 700,
+    fontSize: 14,
   },
   components: {
     Layout: {

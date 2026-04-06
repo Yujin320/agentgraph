@@ -5,7 +5,7 @@ build-backend = "setuptools.backends.legacy:build"
 [project]
 name = "dataagent-v2"
 version = "0.1.0"
-description = "Generic multi-step attribution agent — LangGraph + Vanna + LlamaIndex"
+description = "Multi-step causal attribution agent for supply chain analytics — LangGraph + Vanna + Neo4j"
 requires-python = ">=3.11"
 dependencies = [
   # LangGraph engine

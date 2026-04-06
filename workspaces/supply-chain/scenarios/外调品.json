@@ -2,7 +2,7 @@
   "scenario_id": "外调品分析",
   "title": "外调品分析",
   "icon": "🚚",
-  "description": "川渝地区从外部工厂调入产品的总量、结构、来源与物流成本分析",
+  "description": "从外部工厂调入产品的总量、结构、来源与物流成本分析",
   "page_path": "legacy/streamlit/pages/1_外调品分析.py",
   "kpis": [
     {

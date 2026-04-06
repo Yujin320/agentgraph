@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "description": "Arawana供应链归因图谱 v2.0 — 6层因果网络，覆盖供应→生产→库存→销售→客户→成本全链路",
+  "description": "供应链归因图谱 v2.0 — 6层因果网络，覆盖供应→生产→库存→销售→客户→成本全链路",
   "layers": {
     "供应层": {
       "color": "#8B5CF6",
@@ -224,7 +224,7 @@
   ],
   "scenarios": {
     "外调品分析": {
-      "description": "分析川渝地区从外部工厂调入产品的情况、成本及优化建议",
+      "description": "分析从外部工厂调入产品的情况、成本及优化建议",
       "start_node": "外调品增加",
       "keywords": ["外调", "调货", "外地", "运费", "物流成本", "本地生产", "供货工厂"],
       "sub_questions": {
@@ -531,24 +531,24 @@
     }
   },
   "local_plants": ["GH01", "CQ01", "CD01"],
-  "current_region": "川渝大区（西南区 YH0021）",
+  "current_region": "示例大区",
   "entities": {
     "factories": [
-      {"code": "GH01", "name": "广汉工厂", "region": "川渝大区", "type": "factory"},
-      {"code": "CQ01", "name": "重庆工厂", "region": "川渝大区", "type": "factory"},
-      {"code": "CD01", "name": "成都工厂", "region": "川渝大区", "type": "factory"}
+      {"code": "GH01", "name": "工厂A", "region": "示例大区", "type": "factory"},
+      {"code": "CQ01", "name": "工厂B", "region": "示例大区", "type": "factory"},
+      {"code": "CD01", "name": "工厂C", "region": "示例大区", "type": "factory"}
     ],
     "suppliers": [
-      {"code": "SUP001", "name": "益海嘉里原料", "material": "大豆原油", "type": "supplier"},
-      {"code": "SUP002", "name": "中粮油脂", "material": "菜籽原油", "type": "supplier"},
-      {"code": "SUP003", "name": "汇福粮油", "material": "花生原油", "type": "supplier"}
+      {"code": "SUP001", "name": "原料供应商A", "material": "大豆原油", "type": "supplier"},
+      {"code": "SUP002", "name": "原料供应商B", "material": "菜籽原油", "type": "supplier"},
+      {"code": "SUP003", "name": "原料供应商C", "material": "花生原油", "type": "supplier"}
     ],
     "production_lines": [
-      {"code": "GH01-A", "name": "广汉灌装线A", "factory": "GH01", "type": "production_line"},
-      {"code": "GH01-B", "name": "广汉精炼线B", "factory": "GH01", "type": "production_line"},
-      {"code": "CQ01-A", "name": "重庆灌装线A", "factory": "CQ01", "type": "production_line"},
-      {"code": "CQ01-B", "name": "重庆包装线B", "factory": "CQ01", "type": "production_line"},
-      {"code": "CD01-A", "name": "成都灌装线A", "factory": "CD01", "type": "production_line"}
+      {"code": "GH01-A", "name": "灌装线A", "factory": "GH01", "type": "production_line"},
+      {"code": "GH01-B", "name": "精炼线B", "factory": "GH01", "type": "production_line"},
+      {"code": "CQ01-A", "name": "灌装线C", "factory": "CQ01", "type": "production_line"},
+      {"code": "CQ01-B", "name": "包装线D", "factory": "CQ01", "type": "production_line"},
+      {"code": "CD01-A", "name": "灌装线E", "factory": "CD01", "type": "production_line"}
     ],
     "material_categories": [
       {"code": "MAT01", "name": "大豆油", "category": "食用油", "type": "material"},

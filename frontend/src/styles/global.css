@@ -28,11 +28,19 @@ input, textarea, .ant-input, .ant-btn, [class*="ant-menu"] {
 
 /* ── Typography ───────────────────────────────────────────────────────────── */
 body {
-  font-family: 'DM Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--da-text-primary);
   margin: 0;
+  font-weight: 450;
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6,
+.ant-typography h1, .ant-typography h2, .ant-typography h3, .ant-typography h4 {
+  font-weight: 700 !important;
+  letter-spacing: -0.025em;
 }
 
 h1, h2, h3, .da-heading {
@@ -244,4 +252,50 @@ code, pre, .da-mono, .ant-typography code {
 
 [data-theme="light"] .ant-table-row:nth-child(even) > td {
   background: #fafaf8;
+}
+
+/* ── Card depth & hover ───────────────────────────────────────────────────── */
+.ant-card {
+  border-radius: 14px !important;
+  border: 1px solid var(--da-border-subtle) !important;
+  box-shadow: var(--da-shadow-card) !important;
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease !important;
+}
+.ant-card:hover {
+  box-shadow: var(--da-shadow-elevated) !important;
+  border-color: var(--da-border-base) !important;
+}
+
+/* ── Page header utility ──────────────────────────────────────────────────── */
+.da-page-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--da-border-subtle);
+}
+.da-page-header h3, .da-page-header .ant-typography-h3 {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: 28px !important;
+  margin-bottom: 4px !important;
+}
+
+/* ── Statistic cards ──────────────────────────────────────────────────────── */
+.ant-statistic-title {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
+}
+.ant-statistic-content-value {
+  font-weight: 700 !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+/* ── Table header styling ─────────────────────────────────────────────────── */
+.ant-table-thead > tr > th {
+  font-weight: 650 !important;
+  font-size: 12px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: var(--da-bg-muted) !important;
 }

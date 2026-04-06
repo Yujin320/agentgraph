@@ -1,5 +1,9 @@
 current_period: '202603'
 database:
   url: sqlite:////home/ubuntu/dataagent-jly/kly_poc.db
-description: 川渝（西南区 YH0021）供应链多维归因分析，覆盖销量达成、订单倒挂、外调品、月末挤水等场景
-title: 川渝大区供应链归因
+tables:
+  - sales_delivery
+  - sales_order
+  - rolling_plan
+description: 供应链多维归因分析，覆盖销量达成、订单倒挂、外调品、月末挤水等场景
+title: 供应链智能归因

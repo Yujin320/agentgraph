@@ -527,7 +527,7 @@ workspaces/<name>/
 | `frontend/src/api/client.ts` | 扩展: 增加 pipeline API |
 | `workspaces/template/` | 原样复用 |
 
-### 9.2 从 v1 (Arawana) 复用（需移植改造）
+### 9.2 从 v1 复用（需移植改造）
 
 | v1 文件 | 复用到 | 改造内容 |
 |---------|--------|----------|

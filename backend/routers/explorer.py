@@ -40,6 +40,11 @@ def list_tables(workspace: str):
     inspector = inspect(engine)
     table_names = inspector.get_table_names()
 
+    # Filter by whitelist if configured
+    allowed = ws._config.get("tables")
+    if allowed:
+        table_names = [t for t in table_names if t in allowed]
+
     result = []
     with engine.connect() as conn:
         for name in table_names:

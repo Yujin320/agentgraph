@@ -25,6 +25,7 @@ import {
   FileSearchOutlined,
   ApartmentOutlined,
   BranchesOutlined,
+  ArrowRightOutlined,
 } from '@ant-design/icons';
 import { pipelineApi } from '../api/client';
 
@@ -33,38 +34,82 @@ const { Title, Paragraph, Text } = Typography;
 // Stage display names in Chinese (order matches SETUP_STAGES)
 const STAGE_LABELS: Record<string, string> = {
   connect: '数据源连接',
-  discover: 'Schema 发现',
+  introspect: 'Schema 发现',
   enrich: '语义标注',
-  knowledge: '知识图谱',
-  train: 'SQL 训练',
+  build_kg: '知识图谱',
+  train_sql: 'SQL 训练',
 };
 
 // Stage descriptions
 const STAGE_DESCRIPTIONS: Record<string, string> = {
   connect: '验证数据库连接，统计表和行数',
-  discover: '自动发现 Schema 结构，推断外键关系和字段角色',
+  introspect: '自动发现 Schema 结构，推断外键关系和字段角色',
   enrich: 'LLM 标注中文别名和业务描述（需人工审核）',
-  knowledge: '构建因果知识图谱，写入 Neo4j',
-  train: '自动生成问答对，建立向量索引',
+  build_kg: '构建因果知识图谱，写入 Neo4j',
+  train_sql: '自动生成问答对，建立向量索引',
 };
 
 // Stage estimated times
 const STAGE_EST_TIME: Record<string, string> = {
   connect: '约 5 秒',
-  discover: '约 10–30 秒',
+  introspect: '约 10–30 秒',
   enrich: '约 1–3 分钟（LLM 调用）',
-  knowledge: '约 30 秒–2 分钟',
-  train: '约 1–5 分钟',
+  build_kg: '约 30 秒–2 分钟',
+  train_sql: '约 1–5 分钟',
 };
 
 // Stage icons
 const STAGE_ICONS: Record<string, React.ReactNode> = {
   connect: <DatabaseOutlined />,
-  discover: <SearchOutlined />,
+  introspect: <SearchOutlined />,
   enrich: <FileSearchOutlined />,
-  knowledge: <ApartmentOutlined />,
-  train: <BranchesOutlined />,
+  build_kg: <ApartmentOutlined />,
+  train_sql: <BranchesOutlined />,
 };
+
+// Stage sub-steps: internal logic flow shown in expanded card
+const STAGE_SUBSTEPS: Record<string, { title: string; desc: string }[]> = {
+  connect: [
+    { title: '连接验证', desc: 'SQLAlchemy 建立数据库连接' },
+    { title: '表扫描', desc: '统计表数量和总行数' },
+    { title: '连接信息', desc: '记录数据库类型和版本' },
+  ],
+  introspect: [
+    { title: '表结构扫描', desc: '获取所有表的列名、类型、主键' },
+    { title: '列级统计', desc: '计算基数、空值率、极值、Top-5 去重值' },
+    { title: '外键推断', desc: '基于列名相似度推断表间关联关系' },
+    { title: '角色分类', desc: '自动标注度量（measure）和维度（dimension）' },
+  ],
+  enrich: [
+    { title: 'LLM 语义生成', desc: '为每个表和列生成中文业务名称' },
+    { title: '规则标注', desc: '标注数据过滤条件和业务口径' },
+    { title: '人工审核', desc: '暂停等待用户审查和修正语义标注' },
+    { title: '字典持久化', desc: '确认后写入 schema_dict.yaml' },
+  ],
+  build_kg: [
+    { title: '节点提取', desc: '从语义字典提取 Metric / Dimension / Table 节点' },
+    { title: '关系构建', desc: '建立 CAUSES（因果）和 RELATES_TO（关联）边' },
+    { title: '场景配置', desc: '定义归因场景入口指标和下钻路径' },
+    { title: '写入 Neo4j', desc: '批量导入节点和边到图数据库' },
+  ],
+  train_sql: [
+    { title: '示例生成', desc: '基于 KG 场景自动生成 SQL 问答对' },
+    { title: '向量化', desc: '将问题-SQL 对编码写入 ChromaDB' },
+    { title: 'RAG 验证', desc: '测试检索召回率确保质量' },
+  ],
+};
+
+// Stage input / output labels
+const STAGE_IO: Record<string, { input: string; output: string }> = {
+  connect: { input: '数据库 URL', output: '连接状态 + 表统计' },
+  introspect: { input: '数据库连接', output: '原始 Schema JSON（列统计 + 角色标注）' },
+  enrich: { input: '原始 Schema', output: 'schema_dict.yaml（语义增强）' },
+  build_kg: { input: '语义字典 + 业务规则', output: 'Neo4j 图谱（节点 + 边 + 场景）' },
+  train_sql: { input: 'KG + Schema + Few-shots', output: 'ChromaDB 向量索引' },
+};
+
+// Ordered stage keys for the flow diagram
+const ORDERED_STAGES = ['connect', 'introspect', 'enrich', 'build_kg', 'train_sql'];
 
 type StageStatus = 'pending' | 'running' | 'completed' | 'needs_review' | 'failed' | 'skipped';
 
@@ -110,6 +155,178 @@ function StageStatusTag({ status }: { status: StageStatus }) {
   return <Tag color={color}>{label}</Tag>;
 }
 
+// ─── Horizontal pipeline flow diagram ────────────────────────────────────────
+function PipelineFlowDiagram({ stages }: { stages: StageState[] }) {
+  const statusMap: Record<string, StageStatus> = {};
+  stages.forEach((s) => { statusMap[s.name] = s.status; });
+
+  const nodeColor = (stageName: string) => {
+    const st = statusMap[stageName] ?? 'pending';
+    switch (st) {
+      case 'completed':
+      case 'skipped': return { bg: '#f0fff4', border: '#52c41a', text: '#389e0d' };
+      case 'running': return { bg: '#eef2ff', border: '#4338ca', text: '#4338ca' };
+      case 'failed': return { bg: '#fff1f0', border: '#ff4d4f', text: '#cf1322' };
+      case 'needs_review': return { bg: '#fffbe6', border: '#faad14', text: '#d48806' };
+      default: return { bg: '#fafafa', border: '#d9d9d9', text: '#8c8c8c' };
+    }
+  };
+
+  const nodeIcon = (stageName: string) => {
+    const st = statusMap[stageName] ?? 'pending';
+    if (st === 'running') return <LoadingOutlined style={{ fontSize: 14 }} />;
+    if (st === 'completed' || st === 'skipped') return <CheckCircleOutlined style={{ fontSize: 14 }} />;
+    if (st === 'failed') return <CloseCircleOutlined style={{ fontSize: 14 }} />;
+    return STAGE_ICONS[stageName] ?? <ClockCircleOutlined style={{ fontSize: 14 }} />;
+  };
+
+  return (
+    <Card style={{ borderRadius: 12, marginBottom: 24 }} styles={{ body: { padding: '20px 24px' } }}>
+      <Text strong style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 16 }}>
+        流程总览
+      </Text>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'nowrap',
+        gap: 4,
+        overflowX: 'auto',
+        paddingBottom: 4,
+      }}>
+        {ORDERED_STAGES.map((stageName, idx) => {
+          const colors = nodeColor(stageName);
+          return (
+            <React.Fragment key={stageName}>
+              {/* Stage node */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                minWidth: 90,
+                flex: '0 0 auto',
+              }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: colors.bg,
+                  border: `2px solid ${colors.border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: colors.text,
+                  fontSize: 18,
+                  marginBottom: 8,
+                  boxShadow: statusMap[stageName] === 'running'
+                    ? `0 0 0 4px ${colors.border}22`
+                    : 'none',
+                  transition: 'box-shadow 0.3s',
+                }}>
+                  {nodeIcon(stageName)}
+                </div>
+                <Text style={{
+                  fontSize: 11,
+                  color: colors.text,
+                  textAlign: 'center',
+                  fontWeight: statusMap[stageName] === 'running' ? 600 : 400,
+                  lineHeight: 1.3,
+                  maxWidth: 80,
+                }}>
+                  {STAGE_LABELS[stageName] ?? stageName}
+                </Text>
+              </div>
+              {/* Arrow between nodes */}
+              {idx < ORDERED_STAGES.length - 1 && (
+                <div style={{
+                  flex: '1 1 0',
+                  minWidth: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingBottom: 24,
+                }}>
+                  <div style={{
+                    height: 2,
+                    flex: 1,
+                    background: (() => {
+                      const thisStatus = statusMap[stageName] ?? 'pending';
+                      if (thisStatus === 'completed' || thisStatus === 'skipped') return '#52c41a';
+                      return '#e0e0e0';
+                    })(),
+                    transition: 'background 0.3s',
+                  }} />
+                  <ArrowRightOutlined style={{
+                    fontSize: 10,
+                    color: (() => {
+                      const thisStatus = statusMap[stageName] ?? 'pending';
+                      if (thisStatus === 'completed' || thisStatus === 'skipped') return '#52c41a';
+                      return '#bfbfbf';
+                    })(),
+                    flexShrink: 0,
+                  }} />
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+// ─── Sub-steps mini timeline ──────────────────────────────────────────────────
+function StageSubSteps({ stageName, status }: { stageName: string; status: StageStatus }) {
+  const substeps = STAGE_SUBSTEPS[stageName];
+  if (!substeps || substeps.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
+      <Steps
+        direction="vertical"
+        size="small"
+        style={{ marginLeft: 4 }}
+        current={status === 'completed' || status === 'skipped' ? substeps.length : status === 'running' ? -1 : -1}
+        status={status === 'failed' ? 'error' : status === 'running' ? 'process' : 'finish'}
+        items={substeps.map((step) => ({
+          title: (
+            <Text style={{ fontSize: 12, fontWeight: 500 }}>{step.title}</Text>
+          ),
+          description: (
+            <Text type="secondary" style={{ fontSize: 11 }}>{step.desc}</Text>
+          ),
+        }))}
+      />
+    </div>
+  );
+}
+
+// ─── Input / Output labels ────────────────────────────────────────────────────
+function StageIOLabel({ stageName }: { stageName: string }) {
+  const io = STAGE_IO[stageName];
+  if (!io) return null;
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 8,
+      flexWrap: 'wrap',
+    }}>
+      <Tag style={{ fontSize: 11, margin: 0, background: '#f5f5f5', borderColor: '#d9d9d9', color: '#595959' }}>
+        <Text style={{ fontSize: 11, color: '#8c8c8c' }}>输入：</Text>
+        {io.input}
+      </Tag>
+      <ArrowRightOutlined style={{ fontSize: 10, color: '#bfbfbf' }} />
+      <Tag style={{ fontSize: 11, margin: 0, background: '#f0f5ff', borderColor: '#adc6ff', color: '#2f54eb' }}>
+        <Text style={{ fontSize: 11, color: '#8c8c8c' }}>输出：</Text>
+        {io.output}
+      </Tag>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 const PipelineSetup: React.FC = () => {
   const { workspace } = useParams<{ workspace: string }>();
   const navigate = useNavigate();
@@ -287,6 +504,9 @@ const PipelineSetup: React.FC = () => {
           </Card>
         )}
 
+        {/* Horizontal pipeline flow diagram */}
+        {stages.length > 0 && <PipelineFlowDiagram stages={stages} />}
+
         {/* Steps overview */}
         <Card style={{ borderRadius: 12, marginBottom: 24 }}>
           <Steps
@@ -391,6 +611,9 @@ const PipelineSetup: React.FC = () => {
                 </Space>
               </div>
 
+              {/* Input / Output labels */}
+              <StageIOLabel stageName={stage.name} />
+
               {/* Error display */}
               {stage.status === 'failed' && stage.error && (
                 <Alert
@@ -423,6 +646,11 @@ const PipelineSetup: React.FC = () => {
                     size={['100%', 4]}
                   />
                 </div>
+              )}
+
+              {/* Sub-steps: shown for running, needs_review, failed, and completed stages */}
+              {(stage.status === 'running' || stage.status === 'needs_review' || stage.status === 'failed' || stage.status === 'completed' || stage.status === 'skipped') && (
+                <StageSubSteps stageName={stage.name} status={stage.status} />
               )}
             </Card>
           ))}
