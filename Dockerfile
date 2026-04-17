@@ -25,7 +25,7 @@ WORKDIR /app
 # Install Python dependencies via pyproject.toml before copying source
 # (layer-cached unless pyproject.toml changes)
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir .    # 容器不可变基础设施，故删除-e
 
 # Copy application source
 COPY core/ ./core/
