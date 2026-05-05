@@ -1,6 +1,6 @@
 # AgentGraph: Knowledge-Graph Augmented Agent Framework for Multi-Step Association Analysis
 
-<div align="center">
+<!-- <div align="center">
 
 [![Paper](https://img.shields.io/badge/Paper-Internetware%202026-blue)](https://anonymous.4open.science/r/agentgraph-88E8)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
@@ -9,7 +9,7 @@
 
 **[Internetware 2026]** Official implementation of *"AgentGraph: Knowledge-Graph Augmented Agent Framework for Multi-Step Association Analysis"*
 
-</div>
+</div> -->
 
 ---
 
@@ -41,15 +41,15 @@ Complex association analysis — microservice root-cause analysis, supply-chain 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              Layer A: Unified Interaction Layer                  │
+│              Layer A: Unified Interaction Layer                 │
 │     NL Input │ Analysis Chain DAG View │ HITL Gate │ Report     │
 └──────────────────────────┬──────────────────────────────────────┘
                            │ NL goal q
 ┌──────────────────────────▼──────────────────────────────────────┐
 │              Layer B: Agent Orchestration Layer                  │
 │                                                                  │
-│  ┌──────────┐  Chain C  ┌──────────┐  Step result ┌──────────┐  │
-│  │ Planner  │──────────▶│ Executor │─────────────▶│Evaluator │  │
+│  ┌──────────┐  Chain C  ┌──────────┐  Step result  ┌──────────┐  │
+│  │ Planner  │──────────▶│ Executor │─────────────▶ │Evaluator │  │
 │  │          │           │          │  continue ───▶│          │  │
 │  │·Classify │           │·NL→Query │  branch   ──▶ │·4-dim    │  │
 │  │ intent   │◀─re-plan──│·Self-heal│  backtrack ──▶│ assess   │  │
@@ -57,14 +57,14 @@ Complex association analysis — microservice root-cause analysis, supply-chain 
 │  │ patterns │           └──────────┘  terminate ───▶          │  │
 │  └──────────┘                                      └──────────┘  │
 └──────────────────────────┬──────────────────────────────────────┘
-         Context Injection ↑│
+        Context Injection ↑│
 ┌────────────────────────────────────────────────────────────────────┐
 │  Layer C: Analysis Chain Modeling    Layer D: Domain Knowledge     │
-│                                                                     │
+│                                                                    │
 │  [CypherQuery] [GraphAlgorithm]      Entity-Relation  (Neo4j)      │
-│  [MetricCheck] [PatternMatch]        Ontology Layer                 │
-│  [Aggregate]                         Analysis Pattern Library       │
-└─────────────────────────────────────────────────────────────────────┘
+│  [MetricCheck] [PatternMatch]        Ontology Layer                │
+│  [Aggregate]                         Analysis Pattern Library      │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -197,6 +197,8 @@ cd frontend && npm install && npm run dev   # http://localhost:5173
 
 The `workspaces/supply-chain/` workspace implements the supply-chain causal attribution scenario from the paper: a 6-layer causal graph (supply → production → inventory → sales → customer → cost), 65 few-shot SQL examples, and 8 attribution scenarios. No setup required — the workspace is pre-built.
 
+> **Note on Data Confidentiality:** Due to data confidentiality requirements, we are unable to provide the detailed few-shot SQL examples or grant access to the underlying data systems used in this scenario. As a result, only the pre-built demonstration query shown below can be reproduced; testing with other questions or custom attribution scenarios is not supported in this public release.
+
 ```bash
 # Start the server, then:
 curl -X POST http://localhost:8001/api/workspaces/supply-chain/chat/agent \
@@ -253,7 +255,7 @@ Full OpenAPI docs: `http://localhost:8001/docs`
 
 ---
 
-## Citation
+<!-- ## Citation
 
 ```bibtex
 @inproceedings{agentgraph2026,
@@ -264,7 +266,7 @@ Full OpenAPI docs: `http://localhost:8001/docs`
   year      = {2026},
   note      = {Under review. \url{https://anonymous.4open.science/r/agentgraph-88E8}}
 }
-```
+``` -->
 
 ---
 
