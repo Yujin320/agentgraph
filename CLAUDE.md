@@ -4,16 +4,16 @@
 
 ## 项目概述
 
-DataAgent v2 是一个面向供应链数据分析的智能问答系统，能够对结构化业务数据执行**多步因果归因推理**。给定一个自然语言问题（如"本月外部采购为什么增加了？"），系统自动规划归因链路，生成并执行 SQL 查询，将结果与阈值进行比较，沿知识图谱向上游追溯异常直至定位根因。
+AgentGraph 是一个面向供应链数据分析的智能问答系统，能够对结构化业务数据执行**多步因果归因推理**。给定一个自然语言问题（如"本月外部采购为什么增加了？"），系统自动规划归因链路，生成并执行 SQL 查询，将结果与阈值进行比较，沿知识图谱向上游追溯异常直至定位根因。
 
 系统采用**四层架构**设计：
 
 | 层次 | 职责 | 关键技术 |
 |------|------|----------|
-| 应用层 | 交互式 Web 界面、图表可视化、实时流式推送 | React 19、Ant Design 5、ECharts、SSE |
-| 引擎层 | 多步推理编排、意图识别、策略调度 | LangGraph StateGraph、LangChain |
-| 知识层 | 因果图谱、语义 Schema 字典、Few-shot SQL 示例 | Neo4j、ChromaDB |
-| 数据层 | 多数据库连接、SQL 执行、工作空间隔离 | SQLAlchemy 2、SQLite/PostgreSQL/MySQL |
+| Unified Interaction Layer | 交互式 Web 界面、图表可视化、实时流式推送 | React 19、Ant Design 5、ECharts、SSE |
+| Agent Orchestration Layer | 多步推理编排、意图识别、策略调度 | LangGraph StateGraph、LangChain |
+| Domain Knowledge Layer | 因果图谱、语义 Schema 字典、Few-shot SQL 示例 | Neo4j、ChromaDB |
+| Analysis Chain Modeling Layer | 多数据库连接、SQL 执行、工作空间隔离 | SQLAlchemy 2、SQLite/PostgreSQL/MySQL |
 
 ## 构建与运行命令
 
@@ -134,7 +134,7 @@ intent → plan → sql_gen → execute → reflect → (条件分支) → sql_g
 
 `StrategyRegistry` 通过对每个策略的 `can_handle()` 评分自动路由。
 
-## 知识层
+## Domain Knowledge Layer
 
 ### Schema 构建器（`knowledge/schema_builder.py`）
 

@@ -1,58 +1,129 @@
-"""AgentState — shared state schema for the agentic reasoning graph."""
+"""AgentState — shared state schema for the AgentGraph reasoning engine.
+
+Corresponds to Section 4.3.4 of the AgentGraph paper:
+  "All three agents operate on a shared AgentState object that constitutes
+   the Analysis Context."
+
+Key additions vs. the original DataAgent state:
+  - analysis_chain: explicit DAG representation of the Analysis Chain
+  - branch_stack: checkpoints for backtrack decisions
+  - evaluator_decision: current Evaluator verdict
+  - needs_replan / replan_hint: signals Planner re-invocation on branch
+"""
 from __future__ import annotations
 
-from typing import Literal, TypedDict
+from enum import Enum
+from typing import Literal, Optional, TypedDict
 
 from pydantic import BaseModel, Field
 
 
-class ReasoningStep(BaseModel):
-    """A single step in the multi-step reasoning process."""
-    step_type: Literal["plan", "sql_gen", "execute", "reflect", "conclude"] = "plan"
-    content: str = ""
-    sql: str | None = None
-    result: dict | None = None  # {columns, rows}
-    error: str | None = None
+# ---------------------------------------------------------------------------
+# Step type taxonomy (§4.2.1)
+# ---------------------------------------------------------------------------
+
+class StepType(str, Enum):
+    CYPHER_QUERY    = "CypherQuery"
+    GRAPH_ALGORITHM = "GraphAlgorithm"
+    METRIC_CHECK    = "MetricCheck"
+    PATTERN_MATCH   = "PatternMatch"
+    AGGREGATE       = "Aggregate"
+
+
+class StepStatus(str, Enum):
+    PENDING      = "pending"
+    RUNNING      = "running"
+    DONE         = "done"
+    FAILED       = "failed"
+    NEEDS_HUMAN  = "needs_human"
+
+
+# ---------------------------------------------------------------------------
+# Analysis Step (atomic node in the Analysis Chain DAG)
+# ---------------------------------------------------------------------------
+
+class RepairRecord(BaseModel):
+    """One self-healing repair attempt (Algorithm 1, §4.3.2)."""
+    attempt: int = 0
+    failed_sql: str = ""
+    error: str = ""
+    repaired_sql: str = ""
     timestamp: str = ""
 
 
+class AnalysisStep(BaseModel):
+    """A single typed step in the Analysis Chain DAG."""
+    step_id: str = ""
+    step_type: StepType = StepType.CYPHER_QUERY
+    description: str = ""
+
+    # Execution fields (filled by Executor)
+    query: Optional[str] = None
+    result: Optional[dict] = None
+    status: StepStatus = StepStatus.PENDING
+    repair_log: list[RepairRecord] = Field(default_factory=list)
+
+    # Evaluation fields (filled by Evaluator)
+    evaluator_decision: Optional[str] = None
+    evaluator_reasoning: Optional[str] = None
+    assessment: Optional[dict] = None  # {non_emptiness, goal_proximity, sufficiency, anomaly}
+
+
+# ---------------------------------------------------------------------------
+# Legacy ReasoningStep (kept for backward compat with existing routers)
+# ---------------------------------------------------------------------------
+
+class ReasoningStep(BaseModel):
+    step_type: Literal["plan", "sql_gen", "execute", "reflect", "conclude",
+                       "planner", "executor", "evaluator"] = "plan"
+    content: str = ""
+    sql: Optional[str] = None
+    result: Optional[dict] = None
+    error: Optional[str] = None
+    timestamp: str = ""
+
+
+# ---------------------------------------------------------------------------
+# AgentState — the shared Analysis Context
+# ---------------------------------------------------------------------------
+
 class AgentState(TypedDict, total=False):
-    """LangGraph state for the agentic reasoning engine."""
-    # Identity
+    """LangGraph state for the AgentGraph reasoning engine.
+
+    Shared by Planner, Executor, and Evaluator agents. Designed to be
+    serialisable to JSON for checkpoint persistence and HITL resume.
+    """
+    # ── Identity ──
     workspace: str
     question: str
     thread_id: str
 
-    # Strategy / intent
-    strategy: str  # "causal" | "statistical" | "comparative" | "trend" | "auto"
-    intent: str  # free-form intent description
-
-    # Planning
-    plan: list[str]
+    # ── Planner outputs ──
+    strategy: str          # "causal_attribution" | "comparative" | "trend" | ...
+    intent: str            # free-form intent description
+    analysis_chain: list   # list[AnalysisStep.model_dump()]  — the DAG
     current_step_index: int
 
-    # Reasoning trace
-    reasoning_steps: list[dict]  # serialized ReasoningStep list
+    # ── Branch / backtrack support (§4.3.3) ──
+    branch_stack: list     # list of {step_index, chain_snapshot, branch_hint}
+    needs_replan: bool     # signals Planner to extend DAG
+    replan_hint: Optional[str]
 
-    # SQL cycle
-    current_sql: str | None
-    sql_result: dict | None  # {columns, rows, row_count, error}
-    sql_error: str | None
+    # ── Evaluator outputs ──
+    evaluator_decision: str  # "continue|branch|backtrack|human_intervene|terminate"
+
+    # ── Human-in-the-loop (§4.4) ──
+    pending_approval: bool
+    user_edited_sql: Optional[str]
+
+    # ── Reasoning trace (audit log) ──
+    reasoning_steps: list  # list of {role, content, ...}
+
+    # ── Executor cycle counters ──
     retry_count: int
     max_retries: int
 
-    # Human-in-the-loop
-    pending_approval: bool
-    user_edited_sql: str | None
-
-    # Output
-    conclusion: str | None
-    attribution_paths: list[dict]
-    chart_spec: dict | None
-
-    # Drill control
-    drill_depth: int
-    max_drill_depth: int
-
-    # LLM conversation memory
-    messages: list
+    # ── Final output ──
+    conclusion: Optional[str]
+    chart_spec: Optional[dict]
+    attribution_paths: list

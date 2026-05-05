@@ -1,64 +1,67 @@
-"""Graph builder — assembles the agentic reasoning StateGraph."""
+"""AgentGraph reasoning engine — assembles Planner–Executor–Evaluator StateGraph.
+
+Corresponds to Section 4.3 of the AgentGraph paper.
+
+Graph topology:
+    planner → executor → evaluator ──┬── continue ──→ executor
+                          ↑          ├── branch ───→ planner (re-invoke)
+                          └──────────├── backtrack → executor
+                                     ├── human_intervene → conclude (partial)
+                                     └── terminate ──→ conclude → END
+
+Human-in-the-loop: interrupt_before=["executor"] allows the caller to
+inspect and edit the generated query before execution via /chat/resume.
+"""
 from __future__ import annotations
 
-from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 
+from core.reasoning.evaluator import evaluator_node, route_after_evaluator
+from core.reasoning.executor import executor_node
+from core.reasoning.planner import planner_node
 from core.reasoning.state import AgentState
-from core.reasoning.nodes import (
-    intent_node,
-    plan_node,
-    sql_gen_node,
-    execute_node,
-    reflect_node,
-    conclude_node,
-    route_after_reflect,
-)
+from core.reasoning.nodes import conclude_node  # unchanged from original
 
 
 def build_agent_graph():
-    """Build and compile the agentic reasoning graph.
+    """Build and compile the Planner–Executor–Evaluator reasoning graph.
 
-    Graph flow:
-        intent → plan → sql_gen → execute → reflect →(conditional)→ sql_gen | conclude → END
-
-    Human-in-the-loop: interrupt_before=["sql_gen"] allows the caller to
-    inspect the planned SQL and optionally edit it before execution.
+    Returns a compiled LangGraph StateGraph with MemorySaver checkpointing
+    for HITL interrupt/resume support.
     """
     builder = StateGraph(AgentState)
 
-    # Add nodes
-    builder.add_node("intent", intent_node)
-    builder.add_node("plan", plan_node)
-    builder.add_node("sql_gen", sql_gen_node)
-    builder.add_node("execute", execute_node)
-    builder.add_node("reflect", reflect_node)
-    builder.add_node("conclude", conclude_node)
+    # ── Register nodes ──
+    builder.add_node("planner",   planner_node)
+    builder.add_node("executor",  executor_node)
+    builder.add_node("evaluator", evaluator_node)
+    builder.add_node("conclude",  conclude_node)
 
-    # Set entry point
-    builder.set_entry_point("intent")
+    # ── Entry point ──
+    builder.set_entry_point("planner")
 
-    # Linear edges
-    builder.add_edge("intent", "plan")
-    builder.add_edge("plan", "sql_gen")
-    builder.add_edge("sql_gen", "execute")
-    builder.add_edge("execute", "reflect")
-
-    # Conditional edge from reflect
-    builder.add_conditional_edges(
-        "reflect",
-        route_after_reflect,
-        {"sql_gen": "sql_gen", "conclude": "conclude"},
-    )
-
-    # Terminal edge
+    # ── Fixed edges ──
+    builder.add_edge("planner",  "executor")
+    builder.add_edge("executor", "evaluator")
     builder.add_edge("conclude", END)
 
-    # Compile with checkpointer for HITL and memory
+    # ── Conditional edges from Evaluator (5-decision space) ──
+    builder.add_conditional_edges(
+        "evaluator",
+        route_after_evaluator,
+        {
+            "executor":  "executor",   # continue / backtrack
+            "planner":   "planner",    # branch → re-invoke Planner
+            "conclude":  "conclude",   # terminate / human_intervene (partial)
+        },
+    )
+
+    # ── HITL: pause before executor so analyst can review/edit query ──
     checkpointer = MemorySaver()
     compiled = builder.compile(
         checkpointer=checkpointer,
-        interrupt_before=["sql_gen"],
+        interrupt_before=["executor"],
     )
 
     return compiled
